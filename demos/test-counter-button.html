@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+    <div id="widget-root"></div>
+    <style src='../anyui/static/counter-button.css'></style>
+    <script type="module">
+        import { AnyUIModel } from '../anyui/static/state-manager.js'; // Assuming you moved the class to its own file
+        function loadCSS(href) {
+            return new Promise((resolve, reject) => {
+                // Check if already loaded
+                if (document.querySelector(`link[href="${href}"]`)) return resolve();
+                
+                const link = document.createElement("link");
+                link.rel = "stylesheet";
+                link.href = href;
+                link.onload = resolve;
+                link.onerror = () => reject(new Error(`Could not load CSS at ${href}`));
+                document.head.appendChild(link);
+            });
+        }
+        async function loadWidget(modulePath, cssPath, model, containerId) {
+            try{
+              if (cssPath) {
+                  await loadCSS(cssPath);
+              }
+            }
+            catch (error) {
+                console.error(error.message);
+            }
+            try {
+                // Dynamic import of the default export
+                const { default: widget } = await import(modulePath);
+                
+                const el = document.createElement("div");
+                el.className = "anyui-widget-container";
+                document.getElementById(containerId).appendChild(el);
+
+                // Initialize the anywidget
+                widget.render({ model, el });
+            } catch (err) {
+                console.error(`Failed to load widget at ${modulePath}`, err);
+            }
+        }
+
+        // --- Usage ---
+        const sharedModel = new AnyUIModel({ value: 0 });
+
+        // You can load from local files or even a URL
+        await loadWidget('../anyui/static/counter-button.js', '../anyui/static/counter-button.css', sharedModel, 'widget-root');
+        await loadWidget('../anyui/static/mirror.js', undefined , sharedModel, 'widget-root');
+    </script>
+</body>
+</html>

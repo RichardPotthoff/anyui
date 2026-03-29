@@ -28,15 +28,18 @@ Write once, use everywhere: Jypyter, marimo reactive apps, or pure HTML.
 > pip install -e ".[all]"          # or install individual packages
 > ```
 >
-> ## Jupyter / marimo
->    
+## Jupyter / marimo
+   
 > ```Python
-> from anyui.widgets.button import Button
->    
-> btn = Button(label="Click me")
-> btn
+> from anyui import CounterButton,Box
+>  
+> w1 = CounterButton(value=60)
+> w2 = CounterButton(value=0) 
+> b = Box(children=[w1,w2])
+> b
 > ```
->    
+> [!NOTE]
+> *The following sections are a draft for future implementation:*
 > ## Standalone HTML (no Python) 
 >    
 > ```HTML
@@ -45,22 +48,14 @@ Write once, use everywhere: Jypyter, marimo reactive apps, or pure HTML.
 >     // full interactive widget with embedded JS logic
 > </script>
 > ```
-> 
-> ## Project layout
-> 
+
+## Project layout
+
 > ```
-> packages/
-> ├── core/               # DualStateManager + shared JS
-> ├── sync-comm/          # Jupyter/marimo Comm (default)
-> ├── sync-websocket/     # Raw WebSocket / standalone
-> ├── widgets-button/
-> ├── widgets-slider/
-> └── …                   # one widget per package
-> examples/
-> ├── jupyter/
-> ├── marimo/
-> ├── Pythonista/         # using WKWebView
-> └── standalone/         # single-file HTML demos
+> anyui/                  #  anywidgets (.py) 
+> └── static/             #  _esm, _css (.js, .css)
+> demos/                  #  Jupyter, Python(WKWebView), marimo, HTML
+> 
 > ```
 
 ## Philosophy
