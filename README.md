@@ -29,15 +29,14 @@ Write once, use everywhere: Jypyter, marimo reactive apps, or pure HTML.
 > ```
 >
 ## Jupyter / marimo
-   
-> ```Python
-> from anyui import CounterButton,Box
->  
-> w1 = CounterButton(value=60)
-> w2 = CounterButton(value=0) 
-> b = Box(children=[w1,w2])
-> b
-> ```
+```Python
+from anyui import CounterButton,Box
+  
+w1 = CounterButton(value=60)
+w2 = CounterButton(value=0) 
+b = Box(children=[w1,w2])
+b
+```
 > [!NOTE]
 > *The following sections are a draft for future implementation:*
 > ## Standalone HTML (no Python) 
@@ -50,13 +49,12 @@ Write once, use everywhere: Jypyter, marimo reactive apps, or pure HTML.
 > ```
 
 ## Project layout
+```
+anyui/                  #  anywidgets (.py) 
+└── static/             #  _esm, _css (.js, .css)
+demos/                  #  Jupyter, Python(WKWebView), marimo, HTML
 
-> ```
-> anyui/                  #  anywidgets (.py) 
-> └── static/             #  _esm, _css (.js, .css)
-> demos/                  #  Jupyter, Python(WKWebView), marimo, HTML
-> 
-> ```
+```
 
 ## Philosophy
 
