@@ -6,14 +6,11 @@
 
     <div id="app-root"></div>
     <script type="module">
-    import { Box,Slider,CounterButton,WidgetManager } from '../anyui/static/anyui.js';
-    
-    const manager = new WidgetManager();
+    import { Box,Slider,CounterButton,widgetManager } from '../anyui/static/anyui.js';
     // 1. Instantiate "Python-like" objects
-    const slider = new Slider("slider", { value: 50 });
-    manager.register_model(slider);
+    const slider = new Slider({ value: 50 });
     const rootEl = document.getElementById("app-root");
-    manager.create_view(slider, rootEl);       
+    widgetManager.create_view(slider, rootEl);       
     </script>
 </body>
 </html>

@@ -6,19 +6,16 @@
 
     <div id="app-root"></div>
     <script type="module">
-    import { CounterButton, WidgetManager } from '../anyui/static/anyui.js';
+    import { widgetManager } from '../anyui/static/widget-manager.js';
+    import { CounterButton } from '../anyui/static/counter-button-cls.js';
 //    import { Slider } from '../anyui/static/slider-cls.js';
-
-    const manager = new WidgetManager();
-
-    // 1. Instantiate "Python-like" objects
-    const counterButton_1 = new CounterButton("counterButton_1", { value: 50 });
     
-    manager.register_model(counterButton_1);
+    // 1. Instantiate "Python-like" objects
+    const counterButton_1 = new CounterButton({ value: 50 });
     
     // 3. Render the root widget
     const rootEl = document.getElementById("app-root");
-    manager.create_view(counterButton_1, rootEl);       
+    widgetManager.create_view(counterButton_1, rootEl);       
     </script>
 </body>
 </html>

@@ -6,17 +6,15 @@ export class WidgetManager {
 
     register_model(model) {
         model.widget_manager = this;
-        this.models.set(model.model_id, model);
+        this.models.set(model.id, model);
     }
 
-    async get_model(modelId) {
+    get_model(id) {
         // Strip prefix if present (compatibility with box.js)
-        const id = modelId.startsWith("IPY_MODEL_") 
-            ? modelId.slice("IPY_MODEL_".length) 
-            : modelId;
+        const model =this.models.get(id.replace("IPY_MODEL_", ""));
             
-        if (!this.models.has(id)) throw new Error(`Model ${id} not found`);
-        return this.models.get(id);
+        if (!model) throw new Error(`Model ${id} not found`);
+        return model;
     }
     
     async create_view(model, el = null) {
@@ -43,3 +41,4 @@ export class WidgetManager {
     }
 }
 
+export const widgetManager = new WidgetManager();
