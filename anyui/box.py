@@ -1,3 +1,4 @@
+ 
 import anywidget
 import traitlets
 import ipywidgets
@@ -9,3 +10,4 @@ class Box(anywidget.AnyWidget):
   children = traitlets.List(traitlets.Instance(ipywidgets.DOMWidget)).tag(
       sync=True, **ipywidgets.widget_serialization
       )
+      

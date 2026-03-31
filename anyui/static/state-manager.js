@@ -1,82 +1,45 @@
-export class AnyUIModel {
-  constructor(initialState = {}) {
-    this.state = initialState;
-    this.listeners = new Map();
-  }
-
-  // Required by anywidget spec: Get a property value
-  get(key) {
-    return this.state[key];
-  }
-
-  // Required: Set a property and notify listeners
-  set(key, value) {
-    this.state[key] = value;
-    const eventName = `change:${key}`;
-    if (this.listeners.has(eventName)) {
-      this.listeners.get(eventName).forEach(cb => cb());
-    }
-  }
-
-  // Required: Register event listeners for "change:key"
-  on(eventName, callback) {
-    if (!this.listeners.has(eventName)) {
-      this.listeners.set(eventName, new Set());
-    }
-    this.listeners.get(eventName).add(callback);
-  }
-
-  // Required: Unsubscribe from events
-  off(eventName, callback) {
-    if (this.listeners.has(eventName)) {
-      this.listeners.get(eventName).delete(callback);
-    }
-  }
-
-  // Required: Signal that local changes should sync to a backend
-//  save_changes() {
-//    console.log("Syncing to backend:", this.state);
-    // This is where you would hook into your WKWebView or WebSocket bridge
-//  }
-  save_changes() {
-    console.log("Syncing to backend:", this.state);
-    
-    // Check if we are running inside Pythonista's WKWebView
-    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.anywidget) {
-      window.webkit.messageHandlers.anywidget.postMessage(this.state);
-    }
-  }
-
-}
-
-export class AnyUIManager {
+export class WidgetManager {
     constructor() {
-        this.activeWidgets = new Map(); // Store cleanup functions
+        this.models = new Map();
+        this.moduleCache = new Map();
+    }
+
+    register_model(model) {
+        model.widget_manager = this;
+        this.models.set(model.model_id, model);
+    }
+
+    async get_model(modelId) {
+        // Strip prefix if present (compatibility with box.js)
+        const id = modelId.startsWith("IPY_MODEL_") 
+            ? modelId.slice("IPY_MODEL_".length) 
+            : modelId;
+            
+        if (!this.models.has(id)) throw new Error(`Model ${id} not found`);
+        return this.models.get(id);
     }
     
-    async mount(modulePath, model, container) {
-        this.unmount(container);
-        const { default: widget } = await import(modulePath);
-
-        // 1. Run initialize logic (Calculation/Listeners)
-        if (widget.initialize) {
-            await widget.initialize({ model });
-        }
-
-        // 2. Run render logic (UI/DOM)
-        if (widget.render) {
-            const cleanup = await widget.render({ model, el: container });
-            if (typeof cleanup === 'function') {
-                this.activeWidgets.set(container, cleanup);
+    async create_view(model, el = null) {
+        const container = el || document.createElement('div');
+        const className = model.constructor.name;
+        // 2. Render Logic
+        try {
+            const module = model._esm;
+            if (module.initialize && !model._initialized) {
+                await module.initialize({ model });
+                model._initialized = true;
             }
+    
+            if (module.render) {
+                const cleanup = await module.render({ model, el: container });
+                container._anyui_cleanup = cleanup;
+            }
+        } catch (err) {
+            console.error(`[AnyUI] Render Failed for ${className}:`, err);
+            container.innerHTML = `<div style="color:red">Render Error: ${err.message}</div>`;
         }
-    }
-
-    unmount(container) {
-        if (this.activeWidgets.has(container)) {
-            const cleanup = this.activeWidgets.get(container);
-            cleanup(); // Execute the closure
-            this.activeWidgets.delete(container);
-        }
+    
+        return { el: container };
     }
 }
+
