@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Manual Tab Test</title>
+  <link rel="stylesheet" href="../anyui/static/tab.css">
+</head>
+<body>
+  <h1>Manual Construction Test</h1>
+  <div id="root"></div>
+
+  <script type="module">
+    import { widgetManager } from "../anyui/static/widget-manager.js";
+    import { Tab } from "../anyui/static/tab-cls.js";
+    import { Box } from "../anyui/static/box-cls.js";
+    import { FloatText } from "../anyui/static/float-text-cls.js";
+
+    // Create leaf widgets
+    const f1 = new FloatText({ description: "n_spokes", value: 13 });
+    const f2 = new FloatText({ description: "n_strands", value: 5 });
+    const f3 = new FloatText({ description: "circumference", value: 60 });
+
+    // Create Box
+    const designBox = new Box({
+      orientation: "column",
+      children: [f1, f2, f3]
+    });
+
+    // Create Tab
+    const tab = new Tab({
+      titles: ["Design", "Preview", "G-Code"],
+      selected_index: 0,
+      children: [designBox, new Box({}), new Box({})]
+    });
+
+    // Render
+    const root = document.getElementById("root");
+    widgetManager.create_view(tab, root).then(() => {
+      console.log("✅ Manual Tab rendered");
+    });
+  </script>
+</body>
+</html>

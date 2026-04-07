@@ -20,6 +20,15 @@ export class WidgetManager {
     async create_view(model, el = null) {
         const container = el || document.createElement('div');
         const className = model.constructor.name;
+        
+        if (model._css_promise) {
+            try {
+                await model._css_promise;
+            } catch (err) {
+                console.warn(`CSS load failed for ${model.constructor.name}:`, err);
+            }
+        }
+
         // 2. Render Logic
         try {
             const module = model._esm;
@@ -42,3 +51,4 @@ export class WidgetManager {
 }
 
 export const widgetManager = new WidgetManager();
+

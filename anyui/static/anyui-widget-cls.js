@@ -27,7 +27,8 @@ export class AnyuiWidget {
     }
 
     get(name) {
-        return serialize(this.state[name]);
+        //return serialize(this.state[name]);
+        return this.state[name];
             // Return the staged value if it exists, otherwise the confirmed state
         //return name in this._buffer ? this._buffer[name] : this.state[name];
     }

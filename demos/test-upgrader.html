@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AnyUI Parser Test</title>
+</head>
+<body>
+  <h1>Capstan UI – Parser Test</h1>
+
+  <!-- This is only data / readable structure -->
+  <anyui-tab titles="Design,Preview,G-Code" selected-index="0">
+    <anyui-box orientation="column">
+      <anyui-float-text description="n_spokes" value="13"></anyui-float-text>
+      <anyui-float-text description="n_strands" value="5"></anyui-float-text>
+      <anyui-float-text description="circumference" value="60"></anyui-float-text>
+    </anyui-box>
+    <anyui-html orientation="column">
+      <p>Preview content goes here</p>
+    </anyui-html>
+    <anyui-html orientation="column">
+      <p>G-Code content goes here</p>
+    </anyui-html>
+  </anyui-tab>
+
+  <script type="module">
+    import "../anyui/static/widget-upgrader.js";
+  </script>
+</body>
+</html>

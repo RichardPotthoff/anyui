@@ -10,4 +10,6 @@ class Box(anywidget.AnyWidget):
   children = traitlets.List(traitlets.Instance(ipywidgets.DOMWidget)).tag(
       sync=True, **ipywidgets.widget_serialization
       )
+  orientation = traitlets.Unicode("column").tag(sync=True)  # "column" or "row"
       
+  
