@@ -5,7 +5,7 @@ export class WidgetManager {
     }
 
     register_model(model) {
-        model.widget_manager = this;
+        //model.widget_manager = this; //set in models' constructor
         this.models.set(model.id, model);
     }
 

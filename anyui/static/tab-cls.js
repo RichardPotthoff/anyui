@@ -4,7 +4,8 @@ import { widgetManager } from "./widget-manager.js";
 import _esm from "./tab.js";
 
 // Load CSS at module level (easy to parse later for IIFE)
-const _css_promise = loadCSS("../anyui/static/tab.css");
+//const _css_promise = loadCSS("../anyui/static/tab.css");
+const _css_promise = loadCSS("./tab.css");
 
 class Tab extends AnyuiWidget {
   constructor(initialState = {}) {

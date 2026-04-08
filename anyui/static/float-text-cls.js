@@ -1,7 +1,7 @@
 import { AnyuiWidget, loadCSS } from "./anyui-widget-cls.js";
 import { widgetManager } from "./widget-manager.js";
 import _esm from "./float-text.js";
-const _css_promise = loadCSS("../anyui/static/float-text.css");
+const _css_promise = loadCSS("./float-text.css");
 
 class FloatText extends AnyuiWidget {
   constructor(initialState = {}) {

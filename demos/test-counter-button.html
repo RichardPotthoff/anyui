@@ -6,7 +6,7 @@
 
     <div id="app-root"></div>
     <script type="module">
-    import { widgetManager } from '../anyui/static/widget-manager.js';
+    //import { widgetManager } from '../anyui/static/widget-manager.js';
     import { CounterButton } from '../anyui/static/counter-button-cls.js';
 //    import { Slider } from '../anyui/static/slider-cls.js';
     
@@ -15,7 +15,7 @@
     
     // 3. Render the root widget
     const rootEl = document.getElementById("app-root");
-    widgetManager.create_view(counterButton_1, rootEl);       
+    counterButton_1.create_view(rootEl);       
     </script>
 </body>
 </html>

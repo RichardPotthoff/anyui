@@ -18,7 +18,7 @@ export class AnyuiWidget {
         }
         this.state = { ...initialState};
         this.listeners = {};
-        this.widget_manager = null; // Set by the manager upon registration
+        this.widget_manager = widgetManager; // Set by the manager upon registration
         this._buffer = {}; 
         // These mirror the Python class attributes
         this._esm = null; 
@@ -64,6 +64,10 @@ export class AnyuiWidget {
     trigger(event, ...args) {
         (this.listeners[event] || []).forEach(cb => cb(...args));
     }
+    
+    create_view(el) {
+        return this.widget_manager.create_view(this,el);
+    }
 }
 
 //replace widgets with their ids
@@ -84,8 +88,10 @@ export function serialize(value) {
     return value;
   }
   
-export function loadCSS(href) {
+export function loadCSS(relpath) {
     return new Promise((resolve, reject) => {
+        const href = new URL(relpath, import.meta.url).href;
+        console.log(href); 
         // Check if already loaded
         if (document.querySelector(`link[href="${href}"]`)) return resolve();
         
