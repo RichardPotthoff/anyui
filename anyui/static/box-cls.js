@@ -3,8 +3,8 @@ import { AnyuiWidget,loadCSS } from './anyui-widget-cls.js';
 import _esm from './box.js';
 const _css_promise = loadCSS('./box.css');
 
-class Box extends AnyuiWidget {
-  constructor(initialState = { children: [] } ) {
+export default class Box extends AnyuiWidget {
+  constructor(initialState = { children: [] } ) {  
     super(initialState);
     this._esm = _esm;
     this._css_promise = _css_promise;   // share the same promise
@@ -12,5 +12,3 @@ class Box extends AnyuiWidget {
 }
 
 
-export {Box};
-export default {Box};

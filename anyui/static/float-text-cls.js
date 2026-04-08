@@ -3,7 +3,7 @@ import { widgetManager } from "./widget-manager.js";
 import _esm from "./float-text.js";
 const _css_promise = loadCSS("./float-text.css");
 
-class FloatText extends AnyuiWidget {
+export default class FloatText extends AnyuiWidget {
   constructor(initialState = {}) {
     super(initialState);
     this._esm = _esm;
@@ -12,5 +12,3 @@ class FloatText extends AnyuiWidget {
 }
 
 
-export {FloatText};
-export default {FloatText};

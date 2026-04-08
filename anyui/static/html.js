@@ -1,3 +1,5 @@
+// static/html.js
+
 function render({ model, el }) {
   el.innerHTML = model.get("value") || "";
   

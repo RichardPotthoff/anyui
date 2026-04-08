@@ -7,13 +7,10 @@ import _esm from "./tab.js";
 //const _css_promise = loadCSS("../anyui/static/tab.css");
 const _css_promise = loadCSS("./tab.css");
 
-class Tab extends AnyuiWidget {
+export default class Tab extends AnyuiWidget {
   constructor(initialState = {}) {
     super(initialState);
     this._esm = _esm;
     this._css_promise = _css_promise;   // share the same promise
   }
 }
-
-export {Tab};
-export default { Tab};

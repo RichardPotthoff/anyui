@@ -1,3 +1,4 @@
+// static/anyui-widget-cls.js
 import {widgetManager} from "./widget-manager.js";
 const classCounters=new Map();
 export class AnyuiWidget {
@@ -91,7 +92,7 @@ export function serialize(value) {
 export function loadCSS(relpath) {
     return new Promise((resolve, reject) => {
         const href = new URL(relpath, import.meta.url).href;
-        console.log(href); 
+        // console.log(href); 
         // Check if already loaded
         if (document.querySelector(`link[href="${href}"]`)) return resolve();
         

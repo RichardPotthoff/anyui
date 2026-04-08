@@ -3,9 +3,8 @@ import { AnyuiWidget, loadCSS } from "./anyui-widget-cls.js";
 import { widgetManager } from "./widget-manager.js";
 import _esm from "./html.js";
 
-//const _css_promise = loadCSS("../anyui/static/html.css"); // optional, can be empty
 const _css_promise = loadCSS("./html.css");
-export class HTML extends AnyuiWidget {
+export default class HTML extends AnyuiWidget {
   constructor(initialState = {}) {
     super(initialState);
     this._esm = _esm;
