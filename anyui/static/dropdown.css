@@ -1,0 +1,12 @@
+
+.anyui-dropdown-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0;
+}
+
+.anyui-dropdown-container select {
+    flex: 1;
+    padding: 2px;
+}

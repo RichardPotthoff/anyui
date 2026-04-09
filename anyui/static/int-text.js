@@ -46,4 +46,4 @@ function render({ model, el }) {
   el.appendChild(wrapper);
 }
 
-export default {render}
+export default { render };

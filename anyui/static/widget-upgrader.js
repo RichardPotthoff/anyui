@@ -1,3 +1,4 @@
+
 // anyui/static/widget-upgrader.js
 import { loadCSS } from "./anyui-widget-cls.js";
 import HTML from "./html-cls.js";   // ← added as requested
@@ -52,7 +53,14 @@ async function buildWidgetTree(el) {
     for (const attr of el.attributes) {
       let name = attr.name.replace(/-/g, "_");
       let value = attr.value;
-      if (value === "true") value = true;
+      if (value.startsWith('[') || value.startsWith('{')) {
+        try {
+            value = JSON.parse(value);
+        } catch (e) {
+            console.error("JSON parse failed for", attr.name, e);
+        }
+      }
+      else if (value === "true") value = true;
       else if (value === "false") value = false;
       else if (!isNaN(value) && value.trim() !== "") value = parseFloat(value);
       else if (name === "titles") value = value.split(",").map(s => s.trim());
@@ -87,7 +95,6 @@ async function buildWidgetTree(el) {
   // === Placeholder using HTML widget ===
   if (tag.startsWith("anyui-")) {
     const state = {};
-
     for (const attr of el.attributes) {
       let name = attr.name.replace(/-/g, "_");
       let value = attr.value;

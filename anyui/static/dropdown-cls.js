@@ -1,0 +1,14 @@
+import { widgetManager } from "./widget-manager.js";
+import { AnyuiWidget,loadCSS } from './anyui-widget-cls.js';
+import _esm from './dropdown.js';
+const _css_promise = loadCSS('./dropdown.css');
+
+export default class Dropdown extends AnyuiWidget {
+  constructor(initialState = {} ) {  
+    super(initialState);
+    this._esm = _esm;
+    this._css_promise = _css_promise;   // share the same promise
+  }
+}
+
+

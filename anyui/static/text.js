@@ -12,17 +12,15 @@ function render({ model, el }) {
   label.style.textAlign = "right";
 
   const input = document.createElement("input");
-  input.type = "number";
+  input.type = "text";
   input.step = "1";                    // force integer steps
-  input.value = model.get("value") || 0;
+  input.value = model.get("value") || "";
   input.disabled = model.get("disabled") || false;
   input.style.flex = "1";
 
   // Update model on input change
   input.addEventListener("input", () => {
-    let val = parseFloat(input.value, 10);
-    if (isNaN(val)) val = 0;
-    model.set("value", val);
+    model.set("value", input.value);
     model.save_changes();
   });
 
