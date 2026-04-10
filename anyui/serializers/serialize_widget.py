@@ -7,7 +7,7 @@ def to_kebab(name):
     s = re.sub('(.)([A-Z][a-z]+)', r'\1-\2', name)
     return re.sub('([a-z0-9])([A-Z])', r'\1-\2', s).lower()
 
-def serialize_widget(widget):
+def serialize_widget(widget,level=0):
     class_name = widget.__class__.__name__
     tag = f"anyui-{to_kebab(class_name)}"
     
@@ -47,9 +47,13 @@ def serialize_widget(widget):
     child_content = ""
     if hasattr(widget, 'children'):
         # This calls the function recursively for each child widget
-        child_content = "\n".join([serialize_widget(c) for c in widget.children])
-        
-    return f"<{tag} {' '.join(attributes)}>\n{child_content}\n</{tag}>"
+        child_content = "\n".join([serialize_widget(c,level+1) for c in widget.children])
+    if child_content == "":
+      return f"{'  '*level}<{tag} {' '.join(attributes)}></{tag}>"
+    else:
+      return f"{'  '*level}<{tag} {' '.join(attributes)}>\n{child_content}\n{'  '*level}</{tag}>"
+    
+      
 
 def layout_to_html(layout):
     return (
