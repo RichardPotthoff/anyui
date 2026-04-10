@@ -51,7 +51,7 @@ def serialize_widget(widget):
         
     return f"<{tag} {' '.join(attributes)}>\n{child_content}\n</{tag}>"
 
-def wrap(serialized_widgets):
+def layout_to_html(layout):
     return (
 """
 <!DOCTYPE html>
@@ -60,75 +60,14 @@ def wrap(serialized_widgets):
   <meta charset="UTF-8">
   <title>AnyUI Parser Test</title>
 </head>
-<!-- Console Tee for easy copying -->
-<div id="console-log" style="
-    margin-top: 20px;
-    padding: 12px;
-    background: #1e1e1e;
-    color: #ddd;
-    font-family: monospace;
-    font-size: 13px;
-    max-height: 400px;
-    overflow-y: auto;
-    border: 1px solid #444;
-    border-radius: 6px;
-    white-space: pre-wrap;
-    line-height: 1.4;
-">
-    <strong>Console Output:</strong><br>
-</div>
-
-<script>
-// Simple console tee
-const consoleDiv = document.getElementById('console-log');
-const originalLog = console.log;
-const originalWarn = console.warn;
-const originalError = console.error;
-const originalInfo = console.info;
-
-function appendToConsole(level, ...args) {
-    const timestamp = new Date().toLocaleTimeString();
-    const message = args.map(arg => 
-        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg
-    ).join(' ');
-
-    const line = document.createElement('div');
-    line.style.marginBottom = '2px';
-    line.innerHTML = `<span style="color:#888">[${timestamp}]</span> <span style="color:${level}">[${level.toUpperCase()}]</span> ${message}`;
-    consoleDiv.appendChild(line);
-    consoleDiv.scrollTop = consoleDiv.scrollHeight;
-}
-
-// Override console methods
-console.log = (...args) => {
-    originalLog(...args);
-    appendToConsole('log', ...args);
-};
-
-console.warn = (...args) => {
-    originalWarn(...args);
-    appendToConsole('warn', ...args);
-};
-
-console.error = (...args) => {
-    originalError(...args);
-    appendToConsole('error', ...args);
-};
-
-console.info = (...args) => {
-    originalInfo(...args);
-    appendToConsole('info', ...args);
-};
-</script>
-<body>
-  <h1>Capstan UI – Parser Test</h1>
-
-""" +
-serialized_widgets +
-"""
   <script type="module">
     import "../anyui/static/widget-upgrader.js";
   </script>
+<body>
+  <h1>UI – Parser Test</h1>
+""" +
+serialize_widget(layout) +
+"""
 </body>
 </html>
 """
