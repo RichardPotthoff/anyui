@@ -5,6 +5,7 @@ function render({ model, el }) {
 
     const label = document.createElement("label");
     label.textContent = model.get("description") || "";
+    label.style.minWidth = model.get("style")?.descriptionWidth  || "140px";
     label.style.textAlign = "right";
     // Apply the description_width from the style object
     const style = model.get("style") || {};

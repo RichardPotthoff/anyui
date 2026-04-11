@@ -2,8 +2,8 @@ import anywidget
 import traitlets
 
 class Tab(anywidget.AnyWidget):
-    _esm = "static/tab.js"
-    _css = "static/tab.css"
+    _esm = Path(__file__).parent / "static" / "tab.js"
+    _css = Path(__file__).parent / "static" / "tab.css"
 
     titles = traitlets.List(traitlets.Unicode()).tag(sync=True)
     selected_index = traitlets.Int(0).tag(sync=True)

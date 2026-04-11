@@ -1,4 +1,5 @@
 function render({ model, el }) {
+  const layout = model.get("layout");
   const container = document.createElement("div");
   container.style.display = "flex";
   container.style.gap = "8px";

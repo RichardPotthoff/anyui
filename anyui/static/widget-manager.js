@@ -20,7 +20,14 @@ export class WidgetManager {
     async create_view(model, el = null) {
         const container = el || document.createElement('div');
         const className = model.constructor.name;
-        
+        container.style.display = "inline-flex";
+        container.style.alignItems = "center";
+        container.style.verticalAlign = "middle"; // Helps it sit nicely with text
+   
+        //apply model layout to element
+        if (model.state.layout){
+            Object.assign(container.style, model.state.layout);
+        }
         if (model._css_promise) {
             try {
                 await model._css_promise;

@@ -92,152 +92,99 @@ async function loadModule(relpath) {
   }
 }
 
+const toCamel = (str) => str.replace(/([-_][a-z])/g, group =>
+        group.toUpperCase().replace('-', '').replace('_', '')
+    );
+
 async function buildWidgetTree(el) {
   if (!el || el.nodeType !== Node.ELEMENT_NODE) return null;
 
   const tag = el.tagName.toLowerCase();
-//  console.log(`Building widget from: &lt${tag}&gt`);
+  const isAnyUI = tag.startsWith("anyui-");
 
-const openingTag = el.outerHTML.match(/^<([^>]+)>/)[1];
-console.log(`Building widget from: &lt${openingTag}&gt`);
-
+  // 1. Resolve the Widget Class (with fallback)
   let WidgetClass = null;
+  let usePlaceholder = false;
 
-  if (tag.startsWith("anyui-")) {
+  if (isAnyUI) {
     const widgetName = tag.replace("anyui-", "");
-    const moduleName = `${widgetName}-cls.js`;
+    const module = await loadModule(`./${widgetName}-cls.js`);
+    WidgetClass = module?.default;
 
-    const module = await loadModule(`./${moduleName}`);
-
-    if (module && module.default) {
-      WidgetClass = module.default;
-    } else {
+    if (!WidgetClass) {
       console.warn(`⚠️ Widget &lt${tag}&gt not found → using HTML placeholder`);
-      WidgetClass = null;
+      WidgetClass = HTML; // Fallback class
+      usePlaceholder = true;
     }
   }
 
-  if (WidgetClass) {
-    const state = {};
-
-    for (const attr of el.attributes) {
-      let name = attr.name.replace(/-/g, "_");
-      let value = attr.value;
-      if (value.startsWith('[') || value.startsWith('{')) {
-        try {
-            value = JSON.parse(value);
-        } catch (e) {
-            console.error("JSON parse failed for", attr.name, e);
-        }
-      }
-      else if (value === "true") value = true;
-      else if (value === "false") value = false;
-      else if (!isNaN(value) && value.trim() !== "") value = parseFloat(value);
-      else if (name === "titles") value = value.split(",").map(s => s.trim());
-      state[name] = value;
+  // 2. Not a widget? Just recurse children and exit
+  if (!WidgetClass) {
+    for (const child of Array.from(el.children)) {
+      await buildWidgetTree(child);
     }
-
-    const childModels = [];
-    let rawHTML = "";
-
-    for (const childEl of Array.from(el.children)) {
-      const childModel = await buildWidgetTree(childEl);
-      if (childModel) {
-        childModels.push(childModel);
-      } else {
-        rawHTML += childEl.outerHTML;
-      }
-    }
-
-    if (childModels.length > 0) {
-      state.children = childModels;
-      console.log(`  → Attached ${childModels.length} children to ${WidgetClass.name}`);
-    } else if (rawHTML) {
-      state.value = rawHTML;
-      console.log(`  → Collected raw HTML into "value"`);
-    }
-
-    const model = new WidgetClass(state);
-    console.log(`✅ Created ${WidgetClass.name}`);
-    return model;
+    return null;
   }
 
-  // === Placeholder using HTML widget ===
-  if (tag.startsWith("anyui-")) {
-    const state = {};
-    for (const attr of el.attributes) {
-      let name = attr.name.replace(/-/g, "_");
-      let value = attr.value;
-      if (value === "true") value = true;
-      else if (value === "false") value = false;
-      else if (!isNaN(value) && value.trim() !== "") value = parseFloat(value);
-      else if (name === "titles") value = value.split(",").map(s => s.trim());
-      state[name] = value;
-    }
+  // 3. Hydrate state (Extracted logic)
+  const state = hydrateAttributes(el);
 
-    const stateStr = JSON.stringify(state);
-    const placeholderHTML = `
+  // 4. Process Children
+  const childModels = [];
+  let rawHTML = "";
+
+  for (const childEl of Array.from(el.children)) {
+    const childModel = await buildWidgetTree(childEl);
+    if (childModel) childModels.push(childModel);
+    else rawHTML += childEl.outerHTML;
+  }
+
+  if (childModels.length > 0) state.children = childModels;
+  else if (rawHTML) state.value = rawHTML;
+
+  // 5. Handle Placeholder Specifics
+  if (usePlaceholder) {
+    state.value = `
       <div style="border: 2px dashed #f66; padding: 8px; border-radius: 4px; background: #fff3f3; font-family: monospace; font-size: 13px;">
         <strong>⚠️ ${tag}</strong> not implemented yet — 
-        <code>new ${tag.replace("anyui-", "")}(${stateStr})</code>
+        <code>new ${tag.replace("anyui-", "")}(${JSON.stringify(state)})</code>
       </div>`;
-
-    const htmlModel = new HTML({ value: placeholderHTML });
-    console.log(`✅ Created HTML placeholder for &lt${tag}&gt`);
-    return htmlModel;
   }
-  
 
-  // Not a widget → recurse
-  for (const child of Array.from(el.children)) {
-    await buildWidgetTree(child);
-  }
-  return null;
+  console.log(`✅ Created ${usePlaceholder ? 'Placeholder' : WidgetClass.name} for &lt${tag}&gt`);
+  return new WidgetClass(state);
 }
 
+// --- Helper Functions ---
 
-export async function upgradeAllWidgets_() {
-  console.log("🔧 Starting widget upgrade...");
+function hydrateAttributes(el) {
+  const state = {};
+  const toCamel = (s) => s.replace(/([-_][a-z])/g, g => g.toUpperCase().replace(/[-_]/, ''));
 
-  // 1. Find all custom elements in the body
-  const allElements = Array.from(document.body.querySelectorAll("*"));
-  const anyUIElements = allElements.filter(el => 
-    el.tagName.toLowerCase().startsWith("anyui-")
-  );
+  for (const attr of el.attributes) {
+    let name = attr.name.replace(/-/g, "_");
+    let value = attr.value;
 
-  // 2. Filter for "Root" widgets only
-  // We only want to start hydration at the top level. 
-  // If an element has an ancestor that is ALSO an anyui- element, we skip it.
-  const rootWidgets = anyUIElements.filter(el => {
-    // .closest() finds the nearest ancestor matching the selector.
-    // Since we can't use wildcards in .closest(), we check manually.
-    let parent = el.parentElement;
-    while (parent && parent !== document.body) {
-      if (parent.tagName.toLowerCase().startsWith("anyui-")) {
-        return false; // Found an anyui ancestor; this is a nested child.
-      }
-      parent = parent.parentElement;
-    }
-    return true; // No anyui ancestor; this is a root.
-  });
+    if (value.startsWith('[') || value.startsWith('{')) {
+      try {
+        value = JSON.parse(value);
+        if (typeof value === 'object' && !Array.isArray(value)) {
+          const camelStyles = {};
+          for (const [k, v] of Object.entries(value)) camelStyles[toCamel(k)] = v;
+          value = camelStyles;
+        }
+      } catch (e) { console.error("JSON parse failed", e.message); }
+    } 
+    else if (value === "true") value = true;
+    else if (value === "false") value = false;
+    else if (!isNaN(value) && value.trim() !== "") value = parseFloat(value);
+    else if (name === "titles") value = value.split(",").map(s => s.trim());
 
-  // 3. Hydrate the root widgets
-  for (const el of rootWidgets) {
-    const model = await buildWidgetTree(el);
-
-    if (model) {
-      const renderContainer = document.createElement("div");
-      renderContainer.className = "anyui-container";
-      
-      // Swap the original tag for the live container
-      el.parentNode.replaceChild(renderContainer, el);
-
-      // Render the widget
-      await model.create_view(renderContainer);
-      console.log(`✅ Upgraded root: <${el.tagName.toLowerCase()}>`);
-    }
+    state[name] = value;
   }
+  return state;
 }
+
 
 export async function upgradeAllWidgets() {
   console.log("🔧 Starting DFS hydration...");

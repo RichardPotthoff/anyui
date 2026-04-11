@@ -53,10 +53,10 @@ function render({ model, el }) {
 
   // Update UI from model
   function updateUI() {
-    const value = model.get("value") ?? 0;
-    const min = model.get("min") ?? 0;
-    const max = model.get("max") ?? 100;
-    const step = model.get("step") ?? 0.1;
+    const value = model.get("value") ?? 0.0;
+    const min = model.get("min") ?? 0.0;
+    const max = model.get("max") ?? 1.0;
+    const step = model.get("step") ?? 0.0;
     const disabled = model.get("disabled") ?? false;
     const orientation = model.get("orientation") ?? "horizontal";
     const descText = model.get("description") ?? "";
