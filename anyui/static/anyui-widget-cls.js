@@ -66,8 +66,8 @@ export class AnyuiWidget {
         (this.listeners[event] || []).forEach(cb => cb(...args));
     }
     
-    create_view(el=null) {
-        return this.widget_manager.create_view(this,el);
+    create_view({el=null,attribs={}}={}) {
+        return this.widget_manager.create_view(this,{el:el,attribs:attribs});
     }
 }
 

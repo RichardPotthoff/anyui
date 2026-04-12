@@ -17,7 +17,7 @@ export class WidgetManager {
         return model;
     }
     
-    async create_view(model, el = null) {
+    async create_view(model, {el = null, attribs={}}={}) {
         const container = el || document.createElement('div');
         const className = model.constructor.name;
         container.style.display = "inline-flex";

@@ -203,7 +203,7 @@ export async function upgradeAllWidgets() {
 
         // Swap the tag for the live widget
         node.parentNode.replaceChild(container, node);
-        await model.create_view(container);
+        await model.create_view({el:container});
         
         console.log(`✅ Hydrated: &lt${tag}&gt`);
         return; // Important: Stop walking this branch, model handled the rest
