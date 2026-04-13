@@ -67,6 +67,7 @@ if (document.readyState === "loading") {
 }
 
 // anyui/static/widget-upgrader.js
+import {widgetManager} from "./widget-manager.js";
 import { loadCSS } from "./anyui-widget-cls.js";
 import HTML from "./html-cls.js";   // ← added as requested
 
@@ -99,20 +100,19 @@ const toCamel = (str) => str.replace(/([-_][a-z])/g, group =>
 async function buildWidgetTree(el) {
   if (!el || el.nodeType !== Node.ELEMENT_NODE) return null;
 
-  const tag = el.tagName.toLowerCase();
-  const isAnyUI = tag.startsWith("anyui-");
+  const tagName = el.tagName.toLowerCase();
+  const isAnyUI = tagName.startsWith("anyui-");
 
   // 1. Resolve the Widget Class (with fallback)
   let WidgetClass = null;
   let usePlaceholder = false;
 
   if (isAnyUI) {
-    const widgetName = tag.replace("anyui-", "");
-    const module = await loadModule(`./${widgetName}-cls.js`);
-    WidgetClass = module?.default;
-
+      
+    WidgetClass = await widgetManager.getOrLoadClass(tagName);
+    
     if (!WidgetClass) {
-      console.warn(`⚠️ Widget &lt${tag}&gt not found → using HTML placeholder`);
+      console.warn(`⚠️ Widget &lt${tagName}&gt not found → using HTML placeholder`);
       WidgetClass = HTML; // Fallback class
       usePlaceholder = true;
     }
@@ -146,12 +146,12 @@ async function buildWidgetTree(el) {
   if (usePlaceholder) {
     state.value = `
       <div style="border: 2px dashed #f66; padding: 8px; border-radius: 4px; background: #fff3f3; font-family: monospace; font-size: 13px;">
-        <strong>⚠️ ${tag}</strong> not implemented yet — 
-        <code>new ${tag.replace("anyui-", "")}(${JSON.stringify(state)})</code>
+        <strong>⚠️ ${tagName}</strong> not implemented yet — 
+        <code>new ${tagName.replace("anyui-", "")}(${JSON.stringify(state)})</code>
       </div>`;
   }
 
-  console.log(`✅ Created ${usePlaceholder ? 'Placeholder' : WidgetClass.name} for &lt${tag}&gt`);
+  console.log(`✅ Created ${usePlaceholder ? 'Placeholder' : WidgetClass.name} for &lt${tagName}&gt`);
   return new WidgetClass(state);
 }
 
@@ -193,7 +193,7 @@ export async function upgradeAllWidgets() {
     // 1. If it's a widget, hydrate it and STOP recursion for this branch
     // (buildWidgetTree already handles its own children internally)
     if (node.nodeType === Node.ELEMENT_NODE && node.tagName.toLowerCase().startsWith("anyui-")) {
-      const tag = node.tagName.toLowerCase();
+      const tagName = node.tagName.toLowerCase();
       const model = await buildWidgetTree(node);
 
       if (model) {
@@ -205,7 +205,7 @@ export async function upgradeAllWidgets() {
         node.parentNode.replaceChild(container, node);
         await model.create_view({el:container});
         
-        console.log(`✅ Hydrated: &lt${tag}&gt`);
+        console.log(`✅ Hydrated: &lt${tagName}&gt`);
         return; // Important: Stop walking this branch, model handled the rest
       }
     }

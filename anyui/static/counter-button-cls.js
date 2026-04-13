@@ -9,6 +9,5 @@ export default class CounterButton extends AnyuiWidget {
         // Point to the same ESM the Python class uses
         this._esm = _esm;
         this._css_promise = _css_promise;
-        
     }
 }

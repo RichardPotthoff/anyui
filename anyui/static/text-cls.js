@@ -1,4 +1,5 @@
 // anyui/static/int-text-cls.js
+import { widgetManager } from "./widget-manager.js";
 import { AnyuiWidget, loadCSS } from "./anyui-widget-cls.js";
 
 import _esm from "./text.js";
@@ -10,4 +11,5 @@ export default class Text extends AnyuiWidget {
     this._esm = _esm;
     this._css_promise = _css_promise;
   }
+  static {widgetManager.register_class(this);}
 }

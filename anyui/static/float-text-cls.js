@@ -9,6 +9,7 @@ export default class FloatText extends AnyuiWidget {
     this._esm = _esm;
     this._css_promise = _css_promise;   // share the same promise
   }
+  static {widgetManager.register_class(this);}
 }
 
 

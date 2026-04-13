@@ -25,6 +25,7 @@ export class AnyuiWidget {
         this._esm = null; 
         this._css = null;
         widgetManager.register_model(this);
+    
     }
 
     get(name) {
@@ -69,6 +70,9 @@ export class AnyuiWidget {
     create_view({el=null,attribs={}}={}) {
         return this.widget_manager.create_view(this,{el:el,attribs:attribs});
     }
+    
+    //static {widgetManager.register_class(this);} // do not register base class
+
 }
 
 //replace widgets with their ids

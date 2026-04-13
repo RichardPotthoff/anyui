@@ -1,3 +1,4 @@
+import { widgetManager } from "./widget-manager.js";
 import { AnyuiWidget, loadCSS } from "./anyui-widget-cls.js";
 
 import _esm from "./float-slider.js";
@@ -9,6 +10,7 @@ export default class FloatSlider extends AnyuiWidget {
     this._esm = _esm;
     this._css_promise = _css_promise;   // share the same promise
   }
+  static {widgetManager.register_class(this);}
 }
 
 

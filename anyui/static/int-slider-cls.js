@@ -1,4 +1,4 @@
-
+import { widgetManager } from "./widget-manager.js";
 import { AnyuiWidget,loadCSS } from './anyui-widget-cls.js';
 
 import _esm from './int-slider.js';
@@ -11,4 +11,5 @@ export default class Slider extends AnyuiWidget {
         this._esm = _esm;
         this._css = _css_promise; 
     }
+    static {widgetManager.register_class(this);}
 }

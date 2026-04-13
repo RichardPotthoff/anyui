@@ -1,6 +1,6 @@
 // anyui/static/tab-cls.js
-import { AnyuiWidget, loadCSS } from "./anyui-widget-cls.js";
 import { widgetManager } from "./widget-manager.js";
+import { AnyuiWidget, loadCSS } from "./anyui-widget-cls.js";
 import _esm from "./tab.js";
 
 // Load CSS at module level (easy to parse later for IIFE)
@@ -13,4 +13,5 @@ export default class Tab extends AnyuiWidget {
     this._esm = _esm;
     this._css_promise = _css_promise;   // share the same promise
   }
+  static {widgetManager.register_class(this);}
 }
