@@ -22,7 +22,6 @@ export class WidgetManager {
         this.classes = new Map();
         this.failedClasses = new Set();
         this.models = new Map();
-        this.moduleCache = new Map();
     }
     
     // Used by static imports to "check in"

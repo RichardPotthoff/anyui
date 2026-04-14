@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AnyUI Tab Test - JS Construction</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Capstan UI Preview (JavaScript)</h1>
+  <div id="root"></div>
+
+  <script type="module">
+    import { widgetManager } from "../anyui/static/widget-manager.js";
+    import { Tab } from "../anyui/static/tab-cls.js";
+    import { Box } from "../anyui/static/box-cls.js";
+    import { FloatText } from "../anyui/static/float-text-cls.js";
+
+    // 1. Create leaf widgets
+    const spokes = new FloatText({ description: "n_spokes", value: 13 });
+    const strands = new FloatText({ description: "n_strands", value: 5 });
+    const circ = new FloatText({ description: "circumference", value: 60 });
+
+    // 2. Create container (Box)
+    const meshBox = new Box({
+      orientation: "column",
+      children: [spokes, strands, circ]
+    });
+
+    // 3. Create Tab with children
+    const tab = new Tab({
+      titles: ["Design", "Preview", "G-Code"],
+      selected_index: 0,
+      children: [meshBox, new Box({children: []}), new Box({children: []})]
+    });
+
+    // 4. Render everything
+    const root = document.getElementById("root");
+    widgetManager.create_view(tab, root).then(() => {
+      console.log("✅ Tab with children rendered successfully");
+    });
+  </script>
+</body>
+</html>

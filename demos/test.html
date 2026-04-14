@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AnyUI Tab Test</title>
+  <script type="module">
+    import "../anyui/static/tab-cls.js";
+    import "../anyui/static/box-cls.js";
+    import "../anyui/static/float-text-cls.js";
+    // widget-upgrader.js can be added later for even cleaner tags
+  alert("hello")
+  </script>
+</head>
+<body>
+  <anyui-tab titles="Design,Preview,G-Code" selected-index="0">
+    <anyui-box orientation="column">
+      <anyui-float-text description="n_spokes" value="13"></anyui-float-text>
+      <anyui-float-text description="circumference" value="60"></anyui-float-text>
+    </anyui-box>
+    <anyui-box orientation="column">
+      <anyui-float-text description="description_1" value="13"></anyui-float-text>
+      <anyui-float-text description="description_2" value="60"></anyui-float-text>
+    </anyui-box>
+
+  </anyui-tab>
+</body>
+</html>

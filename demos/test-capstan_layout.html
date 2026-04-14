@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AnyUI Parser Test</title>
+</head>
+<!-- Console Tee for easy copying -->
+<div id="console-log" style="
+    margin-top: 20px;
+    padding: 12px;
+    background: #1e1e1e;
+    color: #ddd;
+    font-family: monospace;
+    font-size: 13px;
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #444;
+    border-radius: 6px;
+    white-space: pre-wrap;
+    line-height: 1.4;
+">
+    <strong>Console Output:</strong><br>
+</div>
+
+<script>
+// Simple console tee
+const consoleDiv = document.getElementById('console-log');
+const originalLog = console.log;
+const originalWarn = console.warn;
+const originalError = console.error;
+const originalInfo = console.info;
+
+function appendToConsole(level, ...args) {
+    const timestamp = new Date().toLocaleTimeString();
+    const message = args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg
+    ).join(' ');
+
+    const line = document.createElement('div');
+    line.style.marginBottom = '2px';
+    line.innerHTML = `<span style="color:#888">[${timestamp}]</span> <span style="color:${level}">[${level.toUpperCase()}]</span> ${message}`;
+    consoleDiv.appendChild(line);
+    consoleDiv.scrollTop = consoleDiv.scrollHeight;
+}
+
+// Override console methods
+console.log = (...args) => {
+    originalLog(...args);
+    appendToConsole('log', ...args);
+};
+
+console.warn = (...args) => {
+    originalWarn(...args);
+    appendToConsole('warn', ...args);
+};
+
+console.error = (...args) => {
+    originalError(...args);
+    appendToConsole('error', ...args);
+};
+
+console.info = (...args) => {
+    originalInfo(...args);
+    appendToConsole('info', ...args);
+};
+</script>
+<body>
+  <h1>Capstan UI – Parser Test</h1>
+
+  <anyui-tab selected-index="0" titles="Design,Preview,G-Code">
+<anyui-v-box >
+<anyui-h-box layout='{"border_bottom": "1px solid black", "border_left": "1px solid black", "border_right": "1px solid black", "border_top": "1px solid black"}'>
+<anyui-v-box >
+<anyui-html value="<h2 align=left>Mesh</h2>">
+
+</anyui-html>
+<anyui-h-box >
+<anyui-int-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="n_spokes" value="13">
+
+</anyui-int-text>
+<anyui-int-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="n_strands" value="5">
+
+</anyui-int-text>
+</anyui-h-box>
+<anyui-h-box >
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="circumference" value="60.0">
+
+</anyui-float-text>
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="shaft diameter" value="5.0">
+
+</anyui-float-text>
+</anyui-h-box>
+<anyui-h-box >
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="phi_rim" value="0.16">
+
+</anyui-float-text>
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="ew_rim" value="1.0">
+
+</anyui-float-text>
+</anyui-h-box>
+<anyui-h-box >
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="r_fillet_rim" value="0.06">
+
+</anyui-float-text>
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="ew_fillet_rim" value="0.8">
+
+</anyui-float-text>
+</anyui-h-box>
+<anyui-h-box >
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="spoke_midpoint" value="0.38">
+
+</anyui-float-text>
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="ew_spokes" value="0.7">
+
+</anyui-float-text>
+</anyui-h-box>
+<anyui-h-box >
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="r_fillet_hub" value="0.16">
+
+</anyui-float-text>
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="ew_fillet_hub" value="0.5">
+
+</anyui-float-text>
+</anyui-h-box>
+<anyui-h-box >
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="phi_hub" value="0.1">
+
+</anyui-float-text>
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="ew_hub" value="0.5">
+
+</anyui-float-text>
+</anyui-h-box>
+</anyui-v-box>
+<anyui-label value="output10 placeholder">
+
+</anyui-label>
+</anyui-h-box>
+<anyui-h-box layout='{"border_bottom": "1px solid black", "border_left": "1px solid black", "border_right": "1px solid black", "border_top": "1px solid black"}'>
+<anyui-v-box >
+<anyui-html value="<h2 align=left>Capstan Geometry: </h2>">
+
+</anyui-html>
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="cable groove length" value="420.0">
+
+</anyui-float-text>
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="circumference" value="60.0">
+
+</anyui-float-text>
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="groove_pitch" value="1.25">
+
+</anyui-float-text>
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="shaft diameter" value="5.0">
+
+</anyui-float-text>
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="shaft_tolerance" value="0.15">
+
+</anyui-float-text>
+<anyui-dropdown layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="shaft_type" index="1">
+
+</anyui-dropdown>
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="D_key" value="0.5">
+
+</anyui-float-text>
+<anyui-int-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="mesh_twist_pitch" value="-60">
+
+</anyui-int-text>
+<anyui-dropdown layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="cable tunnels" index="1">
+
+</anyui-dropdown>
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="tunnel_pos" value="0.5">
+
+</anyui-float-text>
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="countersink_chamfer" value="0.75">
+
+</anyui-float-text>
+<anyui-dropdown layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="left_handed" index="1">
+
+</anyui-dropdown>
+<anyui-int-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="n_skirt" value="3">
+
+</anyui-int-text>
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="skirt_offset" value="1.0">
+
+</anyui-float-text>
+</anyui-v-box>
+<anyui-h-box >
+<anyui-label value="output 11 placeholder">
+
+</anyui-label>
+<anyui-float-slider layout='{"height": "4.5in"}' description="z_" max="13.968602825745682" orientation="vertical" readout-format="0.1f" step="0.2" value="3.2">
+
+</anyui-float-slider>
+</anyui-h-box>
+</anyui-h-box>
+<anyui-h-box layout='{"border_bottom": "1px solid black", "border_left": "1px solid black", "border_right": "1px solid black", "border_top": "1px solid black"}'>
+<anyui-v-box >
+<anyui-output outputs="">
+
+</anyui-output>
+</anyui-v-box>
+</anyui-h-box>
+</anyui-v-box>
+<anyui-h-box layout='{"border_bottom": "1px solid black", "border_left": "1px solid black", "border_right": "1px solid black", "border_top": "1px solid black"}'>
+<anyui-v-box >
+<anyui-html value="<h2 align=left>Print Parameters: </h2>">
+
+</anyui-html>
+<anyui-h-box >
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="layer height" value="0.2">
+
+</anyui-float-text>
+<anyui-button description="update preview">
+
+</anyui-button>
+<anyui-label >
+
+</anyui-label>
+</anyui-h-box>
+</anyui-v-box>
+</anyui-h-box>
+<anyui-v-box layout='{"border_bottom": "1px solid black", "border_left": "1px solid black", "border_right": "1px solid black", "border_top": "1px solid black"}'>
+<anyui-html value="<h2 align=left>Print Parameters: </h2>">
+
+</anyui-html>
+<anyui-h-box >
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="layer height" value="0.2">
+
+</anyui-float-text>
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="extrusion width" value="0.75">
+
+</anyui-float-text>
+</anyui-h-box>
+<anyui-h-box >
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="print speed" value="600.0">
+
+</anyui-float-text>
+</anyui-h-box>
+<anyui-h-box >
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="nozzle_temp" value="220.0">
+
+</anyui-float-text>
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="bed_temp" value="120.0">
+
+</anyui-float-text>
+</anyui-h-box>
+<anyui-h-box >
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="fan_percent" value="100.0">
+
+</anyui-float-text>
+<anyui-float-text layout='{"width": "2.2in"}' style='{"description_width": "1.5in"}' description="fan_z_start" value="1.0">
+
+</anyui-float-text>
+</anyui-h-box>
+<anyui-h-box >
+<anyui-text layout='{"width": "3.0in"}' style='{"description_width": "1.5in"}' description="printer_name" value="generic">
+
+</anyui-text>
+</anyui-h-box>
+<anyui-h-box >
+<anyui-text layout='{"width": "3.0in"}' style='{"description_width": "1.5in"}' description="design_name" value="Capstan">
+
+</anyui-text>
+</anyui-h-box>
+<anyui-h-box >
+<anyui-button button-style="primary" description="download G-Code">
+
+</anyui-button>
+<anyui-label >
+
+</anyui-label>
+</anyui-h-box>
+</anyui-v-box>
+</anyui-tab>
+  <script type="module">
+    import "../anyui/static/widget-upgrader.js";
+  </script>
+</body>
+</html>
