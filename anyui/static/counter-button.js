@@ -2,15 +2,16 @@ function render({ model, el }) {
       let count = () => model.get("value");
       let btn = document.createElement("button");
       btn.classList.add("counter-button");
-      btn.innerHTML = `count is ${count()}`;
+      const update = () => {btn.innerHTML = `count is ${count()}`;};
       btn.addEventListener("click", () => {
         model.set("value", count() + 1);
         model.save_changes();
       });
-      model.on("change:value", () => {
-        btn.innerHTML = `count is ${count()}`;
-      });
+      
+      model.on("change:value", update);
+      
       el.appendChild(btn);
+      update();
                   // 2. Return the Cleanup Closure
       return () => {
       console.log("Cleaning up widget...");

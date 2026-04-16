@@ -8,11 +8,11 @@ function render({ model, el }) {
 
   const input = document.createElement("input");
   input.type = "number";
-  input.step = model.get("step") ||"any";    
-  input.min =  model.get("min") ||"any";     // floating point steps
-  input.max =  model.get("max") ||"any";     // floating point steps
-  input.value = model.get("value") || 0.0;
-  input.disabled = model.get("disabled") || false;
+  input.step = model.get("step") ?? "any";    
+  input.min =  model.get("min") ?? "any";     // floating point steps
+  input.max =  model.get("max") ?? "any";     // floating point steps
+  input.value = model.get("value") ?? 0.0;
+  input.disabled = model.get("disabled") ?? false;
   input.style.flex = "1";
   input.style.minWidth = 0;
   input.style.boxSizing = "border-box";

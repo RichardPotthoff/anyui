@@ -6,11 +6,11 @@
 
     <div id="app-root"></div>
     <script type="module">
-    import { Box,Slider,CounterButton,widgetManager } from '../anyui/static/anyui.js';
+    import IntSlider from '../anyui/static/int-slider-cls.js';
     // 1. Instantiate "Python-like" objects
-    const slider = new Slider({ value: 50 });
+    const slider = new IntSlider({ value: 50 });
     const rootEl = document.getElementById("app-root");
-    widgetManager.create_view(slider, rootEl);       
+    slider.create_view({el:rootEl});       
     </script>
 </body>
 </html>

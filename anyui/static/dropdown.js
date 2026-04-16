@@ -40,7 +40,13 @@ function render({ model, el }) {
     el.appendChild(select);
     
     // Listen for external model updates
-    model.on("change:index", (val) => { select.value = val; });
+    const update = (val) => { select.value = val; };
+    model.on("change:index", update);
+    return () => {
+        // Standard cleanup logic
+        model.off("change:index", update);
+        container.remove();
+    };
 }
 
 export default { render };

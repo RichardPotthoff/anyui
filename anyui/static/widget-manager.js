@@ -88,6 +88,7 @@ export class WidgetManager {
         }
 
         // 2. Render Logic
+        var cleanup=null;
         try {
             const module = model._esm;
             if (module.initialize && !model._initialized) {
@@ -96,15 +97,14 @@ export class WidgetManager {
             }
     
             if (module.render) {
-                const cleanup = await module.render({ model, el: container });
+                cleanup = await module.render({ model, el: container });
                 container._anyui_cleanup = cleanup;
             }
         } catch (err) {
             console.error(`[AnyUI] Render Failed for ${className}:`, err);
             container.innerHTML = `<div style="color:red">Render Error: ${err.message}</div>`;
         }
-    
-        return { el: container };
+        return {el:container,cleanup:cleanup};
     }
 }
 

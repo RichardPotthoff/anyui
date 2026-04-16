@@ -6,16 +6,19 @@
 
     <div id="app-root"></div>
     <script type="module">
-    import { Box, CounterButton, Slider, widgetManager } from '../anyui/static/anyui.js';
+    import Box from '../anyui/static/box-cls.js';
+    import CounterButton from '../anyui/static/counter-button-cls.js';
+    import IntSlider from '../anyui/static/int-slider-cls.js';
     
     //const manager = new WidgetManager();
 
     // 1. Instantiate "Python-like" objects
     const b1 = new CounterButton({ value: 50 });
-    const s1 = new Slider({ value: 0 });
+    const s1 = new IntSlider({ value: 0 });
     const box = new Box({ children:[b1,s1] });
+    alert(JSON.stringify(box));
     const rootEl = document.getElementById("app-root");
-    widgetManager.create_view(box, rootEl);       
+    box.create_view().then((view) => {rootEl.appendChild(view.el);});     
     </script>
 </body>
 </html>

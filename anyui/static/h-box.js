@@ -1,26 +1,47 @@
 function render({ model, el }) {
-  const layout = model.get("layout");
   const container = document.createElement("div");
   container.style.display = "flex";
   container.style.gap = "8px";
-  container.style.flexDirection = model.get("orientation") || "row";
-
+  container.style.flexDirection = "row";
   el.appendChild(container);
 
-  function update() {
-    container.innerHTML = "";
-    (model.get("children") || []).forEach(child => {
-      if (child) {
-        model.widget_manager.create_view(child).then(view => container.appendChild(view.el));
-      }
+  // Keep track of all active child cleanup functions
+  let childCleanups = [];
+
+  async function update() {
+    // 1. Clean up ALL existing children first
+    childCleanups.forEach(cleanup => {
+        if (typeof cleanup === "function") cleanup();
     });
+    childCleanups = [];
+    container.innerHTML = "";
+
+    // 2. Render new children
+    const children = model.get("children") || [];
+    for (const child of children) {
+      if (child) {
+        try {
+          const view = await model.widget_manager.create_view(child);
+          container.appendChild(view.el);
+          // Store the specific cleanup for this child
+          if (view.cleanup) childCleanups.push(view.cleanup);
+        } catch (err) {
+          console.error("HBox child render failed", err.message);
+        }
+      }
+    }
   }
 
   model.on("change:children", update);
-  model.on("change:orientation", () => container.style.flexDirection = model.get("orientation"));
 
   update();
-}    
 
-export default { render }
+  // 3. RETURN THE MASTER CLEANUP
+  return () => {
+    model.off("change:children", update);
+    childCleanups.forEach(cleanup => cleanup());
+    container.remove();
+  };
+}
 
+export default { render };
