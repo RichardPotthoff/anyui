@@ -128,7 +128,17 @@ async function buildWidgetTree(el) {
 
   // 3. Hydrate state (Extracted logic)
   const state = hydrateAttributes(el);
-
+  
+  // use description as id when description is defined, and id is not
+  try{
+      if (!state.id && state.description){
+          state.id = state.description;
+      }
+  }catch(err){
+      console.error(err.message);
+      console.error(JSON.stringify(state));
+  }
+     
   // 4. Process Children
   const childModels = [];
   let rawHTML = "";

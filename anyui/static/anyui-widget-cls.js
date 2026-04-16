@@ -22,6 +22,9 @@ export class AnyuiWidget {
         }
         const cachedModel=widgetManager.get_model(id);
         if (cachedModel) { 
+            if (this.constructor !== cachedModel.constructor){
+                console.error(`Type mismatch: {id:"${id}", type:"${this.constructor.name}"}, {id:"${cachedModel.id}", type:"${cachedModel.constructor.name}"}`);
+            };
             return cachedModel;
         }
         
