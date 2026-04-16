@@ -5,21 +5,27 @@ const classCounters = new Map();
 
 export class AnyuiWidget {
     constructor(initialState = {}) {
+        try{
         const className = this.constructor.name;
-
+        var id=null;
         // ID handling: user-provided takes priority
         if (initialState.id !== undefined) {
-            this.id = String(initialState.id);
-            delete initialState.id;
+            id = String(initialState.id);
+            //delete initialState.id;//do not modify the initialstate object
         } else {
             if (!classCounters.has(className)) {
                 classCounters.set(className, 0);
             }
             const count = classCounters.get(className);
-            this.id = `${className}_${String(count).padStart(3, '0')}`;
+            id = `${className}_${String(count).padStart(3, '0')}`;
             classCounters.set(className, count + 1);
         }
-
+        const cachedModel=widgetManager.get_model(id);
+        if (cachedModel) { 
+            return cachedModel;
+        }
+        
+        this.id=id;
         this.state = { ...initialState };
         this.listeners = {};
         this.widget_manager = widgetManager; // Set by the manager upon registration
@@ -30,6 +36,9 @@ export class AnyuiWidget {
         this._css = null;
 
         widgetManager.register_model(this);
+    }catch(err){
+        console.error(err.message);
+    }
     }
 
     get(name) {

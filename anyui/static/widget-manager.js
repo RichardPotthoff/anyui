@@ -61,11 +61,7 @@ export class WidgetManager {
     }
 
     get_model(id) {
-        // Strip prefix if present (compatibility with box.js)
-        const model =this.models.get(id.replace("IPY_MODEL_", ""));
-            
-        if (!model) throw new Error(`Model ${id} not found`);
-        return model;
+        return this.models.get(id.replace("IPY_MODEL_", "")) ?? null;
     }
     
     async create_view(model, {el = null, attribs={}}={}) {
