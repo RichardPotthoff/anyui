@@ -11,7 +11,7 @@ def serialize_widget(widget,level=0):
     class_name = widget.__class__.__name__
     tag = f"anyui-{to_kebab(class_name)}"
     
-    important_keys = set() #set(widget.keys) #just use _repr_keys
+    important_keys = set(('key',)) #"key" is the name of the parameter that the widget controls
     if hasattr(widget, '_repr_keys'):
         important_keys.update(widget._repr_keys())
         
@@ -25,6 +25,8 @@ def serialize_widget(widget,level=0):
     keys_to_serialize = (important_keys - noise) - {'children'}
     
     for key in keys_to_serialize:
+        if not hasattr(widget, key):
+            continue
         value = getattr(widget, key)
         
         # FIX: Explicitly check for get_state on non-main widgets

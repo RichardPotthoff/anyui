@@ -1,8 +1,8 @@
 from .counter_button import CounterButton
 from .box import Box
-from .v_box importVBox
+from .v_box import VBox
 from .h_box import HBox
 from .tab import Tab
-from .int-slider import IntSlider
-from .float-slider import FloatSlider
+from .int_slider import IntSlider
+from .float_slider import FloatSlider
 from .html import HTML

@@ -2,15 +2,12 @@
 import anywidget
 import traitlets
 import ipywidgets
-import os
 from pathlib import Path
-import sys
-class Box(anywidget.AnyWidget):
+
+class VBox(anywidget.AnyWidget):
   _esm = Path(__file__).parent / "static" / "v-box.js"
   _css = Path(__file__).parent / "static" / "v-box.css"
   children = traitlets.List(traitlets.Instance(ipywidgets.DOMWidget)).tag(
       sync=True, **ipywidgets.widget_serialization
       )
-  orientation = traitlets.Unicode("column").tag(sync=True)  # "column" or "row"
       
-  

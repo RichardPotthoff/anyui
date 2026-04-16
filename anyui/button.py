@@ -2,10 +2,11 @@ import anywidget
 import traitlets
 from pathlib import Path
 
-class MyButton(anywidget.AnyWidget):
+class Button(anywidget.AnyWidget):
     label = traitlets.Unicode("Click me").tag(sync=True)
 
     _esm = Path(__file__).parent / "static" / "button.js"
+    _css = Path(__file__).parent / "static" / "button.css"
     
     def _handle_custom_msg(self, content, buffers=None):
         if content.get("event") == "click":

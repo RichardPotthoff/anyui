@@ -1,5 +1,7 @@
 import anywidget
 import traitlets
+import ipywidgets
+from pathlib import Path
 
 class Tab(anywidget.AnyWidget):
     _esm = Path(__file__).parent / "static" / "tab.js"
@@ -7,6 +9,6 @@ class Tab(anywidget.AnyWidget):
 
     titles = traitlets.List(traitlets.Unicode()).tag(sync=True)
     selected_index = traitlets.Int(0).tag(sync=True)
-    children = traitlets.List(traitlets.Instance(anywidget.AnyWidget)).tag(
-        sync=True, **anywidget.widget_serialization
-    )
+    children = traitlets.List(traitlets.Instance(ipywidgets.DOMWidget)).tag(
+      sync=True, **ipywidgets.widget_serialization
+      )    

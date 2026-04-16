@@ -2,7 +2,7 @@ from anywidget import AnyWidget
 import traitlets as t
 from pathlib import Path
 
-class Slider(AnyWidget):
+class FloatSlider(AnyWidget):
     value = t.Float(0.0).tag(sync=True)
     min = t.Float(0.0).tag(sync=True)
     max = t.Float(1.0).tag(sync=True)

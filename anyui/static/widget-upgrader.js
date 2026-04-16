@@ -129,9 +129,7 @@ async function buildWidgetTree(el) {
   
   // use description as id when description is defined, and id is not
   try{
-      if (!state.id && state.description){
-          state.id = state.description;
-      }
+      state.id = state.id ?? state.key ?? state.description;
   }catch(err){
       console.error(err.message);
       console.error(JSON.stringify(state));
