@@ -1,5 +1,5 @@
-
-import { AnyuiWidget,loadCSS } from './anyui-widget-cls.js';
+// anyui/static/counter-button-cls.js
+import { AnyuiWidget,loadCSS,widgetManager} from './anyui-model.js';
 
 import _esm from './counter-button.js';
 const _css_promise = loadCSS('./counter-button.css');

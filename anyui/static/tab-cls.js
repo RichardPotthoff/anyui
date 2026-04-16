@@ -1,6 +1,6 @@
 // anyui/static/tab-cls.js
-import { widgetManager } from "./widget-manager.js";
-import { AnyuiWidget, loadCSS } from "./anyui-widget-cls.js";
+import { AnyuiWidget,loadCSS,widgetManager} from './anyui-model.js';
+
 import _esm from "./tab.js";
 
 // Load CSS at module level (easy to parse later for IIFE)

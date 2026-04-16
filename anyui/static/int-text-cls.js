@@ -1,8 +1,7 @@
 // anyui/static/int-text-cls.js
-import { widgetManager } from "./widget-manager.js";
-import { AnyuiWidget, loadCSS } from "./anyui-widget-cls.js";
-import _esm from "./int-text.js";
+import { AnyuiWidget,loadCSS,widgetManager} from './anyui-model.js';
 
+import _esm from "./int-text.js";
 const _css_promise = loadCSS("./int-text.css");   // optional for now
 
 export default class IntText extends AnyuiWidget {

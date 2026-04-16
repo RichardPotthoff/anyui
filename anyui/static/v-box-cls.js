@@ -1,5 +1,6 @@
-import { widgetManager } from "./widget-manager.js";
-import { AnyuiWidget,loadCSS } from './anyui-widget-cls.js';
+// anyui/static/v-box.js
+import { AnyuiWidget,loadCSS,widgetManager} from './anyui-model.js';
+
 import _esm from './v-box.js';
 const _css_promise = loadCSS('./v-box.css');
 

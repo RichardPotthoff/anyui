@@ -1,5 +1,6 @@
-import { widgetManager } from "./widget-manager.js";
-import { AnyuiWidget,loadCSS } from './anyui-widget-cls.js';
+// anyui/static/h-box-cls.js
+import { AnyuiWidget,loadCSS,widgetManager} from './anyui-model.js';
+
 import _esm from './h-box.js';
 const _css_promise = loadCSS('./h-box.css');
 

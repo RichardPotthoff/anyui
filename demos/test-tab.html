@@ -12,7 +12,6 @@
   <div id="root"></div>
 
   <script type="module">
-    import { widgetManager } from "../anyui/static/widget-manager.js";
     import Tab  from "../anyui/static/tab-cls.js";
     import Box from "../anyui/static/box-cls.js";
     import FloatText from "../anyui/static/float-text-cls.js";
@@ -37,7 +36,7 @@
 
     // 4. Render everything
     const root = document.getElementById("root");
-    widgetManager.create_view(tab, {el:root}).then(() => {
+    tab.create_view({el:root}).then(() => {
       console.log("✅ Tab with children rendered successfully");
     });
   </script>

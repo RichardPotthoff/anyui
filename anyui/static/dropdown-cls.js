@@ -1,5 +1,5 @@
-import { widgetManager } from "./widget-manager.js";
-import { AnyuiWidget,loadCSS } from './anyui-widget-cls.js';
+// anyui/static/dropdown-cls.js
+import { AnyuiWidget,loadCSS,widgetManager} from './anyui-model.js';
 import _esm from './dropdown.js';
 const _css_promise = loadCSS('./dropdown.css');
 

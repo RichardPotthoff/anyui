@@ -1,5 +1,6 @@
-import { AnyuiWidget, loadCSS } from "./anyui-widget-cls.js";
-import { widgetManager } from "./widget-manager.js";
+// // anyui/static/float-text-cls.js
+import { AnyuiWidget,loadCSS,widgetManager} from './anyui-model.js';
+
 import _esm from "./float-text.js";
 const _css_promise = loadCSS("./float-text.css");
 

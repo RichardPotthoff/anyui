@@ -66,9 +66,7 @@ if (document.readyState === "loading") {
   setupLogger();
 }
 
-// anyui/static/widget-upgrader.js
-import {widgetManager} from "./widget-manager.js";
-import { loadCSS } from "./anyui-widget-cls.js";
+import { widgetManager,loadCSS } from "./anyui-model.js";
 import HTML from "./html-cls.js";   // ← added as requested
 
 // Dynamic module loader

@@ -1,5 +1,5 @@
-
-import { AnyuiWidget,loadCSS } from './anyui-widget-cls.js';
+// anyui/static/button-cls.js
+import { AnyuiWidget,loadCSS,widgetManager} from './anyui-model.js';
 
 import _esm from './button.js';
 const _css_promise = loadCSS('./button.css');
