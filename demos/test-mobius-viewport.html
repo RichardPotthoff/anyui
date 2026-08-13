@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>anyui – Möbius viewport</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 1rem;
+      max-width: 640px;
+    }
+    h1 { font-size: 1.2rem; margin: 0 0 0.25rem; }
+    p { color: #555; margin: 0 0 1rem; font-size: 0.95rem; }
+    #status {
+      margin-top: 0.75rem;
+      font-family: ui-monospace, monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 0.6rem 0.75rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Möbius viewport</h1>
+  <p>
+    Cookie-cutter outlines as turtle arcs. One composed Möbius on the model.
+    1 finger pan · 2 pan/zoom/rotate · 3 bend. Works with touch and mouse.
+  </p>
+  <div id="host"></div>
+  <div id="status">…</div>
+
+  <script type="module">
+    import MobiusViewport from "../anyui/static/mobius-viewport-cls.js";
+    import { mobiusFromJSON } from "../anyui/static/geom/mobius.js";
+    import { cAbs } from "../anyui/static/geom/complex.js";
+
+    const view = new MobiusViewport({
+      outline: "Star",
+      width: 480,
+      height: 480,
+    });
+
+    const status = document.getElementById("status");
+    function report() {
+      const m = mobiusFromJSON(view.get("mobius"));
+      const fmt = (z) =>
+        `${z.re.toFixed(3)}${z.im >= 0 ? "+" : ""}${z.im.toFixed(3)}i`;
+      status.textContent =
+        `outline=${view.get("outline")}\n` +
+        `a=${fmt(m.a)}  b=${fmt(m.b)}\n` +
+        `c=${fmt(m.c)}  d=${fmt(m.d)}\n` +
+        `|c|=${cAbs(m.c).toFixed(4)}  (bend ~ 0 when small)`;
+    }
+
+    view.on("change:mobius", report);
+    view.on("change:outline", report);
+
+    await view.create_view({ el: document.getElementById("host") });
+    report();
+  </script>
+</body>
+</html>

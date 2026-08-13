@@ -1,0 +1,61 @@
+.mobius-viewport {
+  display: inline-block;
+  max-width: 100%;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #111827;
+
+  --mv-bg: #f8fafc;
+  --mv-grid: #e2e8f0;
+  --mv-stroke: #2563eb;
+  --mv-fill: rgba(37, 99, 235, 0.1);
+  --mv-border: #cbd5e1;
+  --mv-bar: #ffffff;
+  --mv-muted: #64748b;
+}
+
+.mobius-viewport-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mobius-viewport-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.mobius-viewport-bar select,
+.mobius-viewport-bar button {
+  height: 32px;
+  border: 1px solid var(--mv-border);
+  border-radius: 6px;
+  background: var(--mv-bar);
+  font: inherit;
+  padding: 0 10px;
+}
+
+.mobius-viewport-bar button {
+  cursor: pointer;
+}
+
+.mobius-viewport-hint {
+  color: var(--mv-muted);
+  font-size: 13px;
+}
+
+.mobius-viewport-canvas {
+  display: block;
+  max-width: 100%;
+  border: 1px solid var(--mv-border);
+  border-radius: 8px;
+  background: var(--mv-bg);
+  touch-action: none;
+  cursor: grab;
+}
+
+.mobius-viewport-canvas:active {
+  cursor: grabbing;
+}
