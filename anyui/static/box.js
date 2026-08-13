@@ -1,4 +1,4 @@
-alert("box url  "+import.meta.url);
+//alert("box url  "+import.meta.url);
 
 function render({ model, el }) {
   const container = document.createElement("div");
