@@ -7,15 +7,16 @@
     <div id="app-root"></div>
     <script type="module">
     import Box from '../anyui/static/box-cls.js';
+    import HBox from '../anyui/static/h-box-cls.js';
     import CounterButton from '../anyui/static/counter-button-cls.js';
     import IntSlider from '../anyui/static/int-slider-cls.js';
-    
+    import FloatSlider from '../anyui/static/float-slider-cls.js';
     //const manager = new WidgetManager();
 
     // 1. Instantiate "Python-like" objects
     const b1 = new CounterButton({ value: 50 });
-    const s1 = new IntSlider({ value: 0 });
-    const box = new Box({ children:[b1,s1] });
+    const s1 = new  FloatSlider({value:0.5,step:0.0,description:"x",orientation:"horizontal"});
+    const box = new HBox({ children:[b1,s1] });
     const rootEl = document.getElementById("app-root");
     box.create_view().then((view) => {rootEl.appendChild(view.el);});     
     </script>

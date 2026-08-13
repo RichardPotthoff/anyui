@@ -10,6 +10,8 @@ function render({ model, el }) {
 
     // Pre-defined custom message event (for clicks)
     btn.addEventListener("click", () => {
+        alert("Button was clicked!");
+        alert(model.send.length);
         model.send({ event: "click" });
     });
 

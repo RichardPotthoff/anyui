@@ -4,6 +4,9 @@
 const classCounters = new Map();
 
 export class AnyuiWidget {
+    /** Set to true to log every change:/send/trigger (noisy during CurveEditor playback). */
+    static debug = false;
+
     constructor(initialState = {}) {
         try{
         const className = this.constructor.name;
@@ -48,13 +51,27 @@ export class AnyuiWidget {
         return this.state[name];
     }
 
+    /**
+     * Match the anywidget / Backbone model contract more closely:
+     * - set() updates the live state immediately so subsequent get() sees the new value
+     * - changes are recorded in _buffer so save_changes() can fire events + sync
+     * - change:* events are fired only from save_changes() (not from set itself)
+     *
+     * This is required by widgets such as CurveEditor that do:
+     *   model.set("t", newT);   // no save_changes
+     *   // then immediately call code that does model.get("t")
+     */
     set(name, value) {
+        // Always record in the buffer (even if equal) so explicit save_changes still works
         this._buffer[name] = value;
+        this.state[name] = value;
     }
 
-    // === NEW: send custom message (mirrors ipywidgets / anywidget model.send) ===
+    // === send custom message (mirrors ipywidgets / anywidget model.send) ===
     send(content, callbacks = null, buffers = null) {
-        console.log(`[${this.id}] send() called →`, content);
+        if (AnyuiWidget.debug) {
+            console.log(`[${this.id}] send() called →`, content);
+        }
 
         // For standalone mode (no Python backend), you can just log or ignore
         // If you later add a bridge, post the message here
@@ -62,7 +79,7 @@ export class AnyuiWidget {
         if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.anyui) {
             window.webkit.messageHandlers.anyui.postMessage({
                 method: 'custom_message',
-                model_id: this.id,        // or this.model_id if you set it
+                model_id: this.id,
                 content: content,
                 buffers: buffers
             });
@@ -77,49 +94,46 @@ export class AnyuiWidget {
         this.listeners[event].push(callback);
     }
 
-    // === NEW: off() - remove listener(s) ===
+    // === off() - remove listener(s) ===
     off(event = null, callback = null) {
         if (!event) {
-            // remove all listeners
             this.listeners = {};
-            console.log(`[${this.id}] off() - removed all listeners`);
             return;
         }
 
         if (!callback) {
-            // remove all listeners for this event
             delete this.listeners[event];
-            console.log(`[${this.id}] off("${event}") - removed all callbacks for event`);
             return;
         }
 
-        // remove specific callback
         if (this.listeners[event]) {
             this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
             if (this.listeners[event].length === 0) {
                 delete this.listeners[event];
             }
-            console.log(`[${this.id}] off("${event}") - removed one callback`);
         }
     }
 
     save_changes() {
         const changes = { ...this._buffer };
+        this._buffer = {};
+
         for (const [key, value] of Object.entries(changes)) {
+            // state was already updated in set(); re-assign is a no-op but keeps symmetry
             this.state[key] = value;
 
-            // === Logging for change events ===
-            console.log(`[${this.id}] change:${key} →`, value);
+            if (AnyuiWidget.debug) {
+                console.log(`[${this.id}] change:${key} →`, value);
+            }
 
             this.trigger(`change:${key}`, value);
         }
-        this._buffer = {};
 
         // Sync to Python/bridge if present
         if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.anyui) {
             window.webkit.messageHandlers.anyui.postMessage({
                 method: 'update_state',
-                model_id: this.id,   // adjust if you use model_id
+                model_id: this.id,
                 changes: changes
             });
         }
@@ -127,7 +141,7 @@ export class AnyuiWidget {
 
     trigger(event, ...args) {
         const cbs = this.listeners[event] || [];
-        if (cbs.length > 0 && (event.startsWith("change:") || event === "msg:custom")) {
+        if (AnyuiWidget.debug && cbs.length > 0 && (event.startsWith("change:") || event === "msg:custom")) {
             console.log(`[${this.id}] triggering "${event}" with`, ...args);
         }
         cbs.forEach(cb => cb(...args));
