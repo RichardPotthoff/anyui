@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>anyui – CurveEditor (pure frontend)</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 1.5rem;
+      max-width: 720px;
+    }
+    h1 { font-size: 1.25rem; margin-bottom: 0.25rem; }
+    p  { color: #555; margin-top: 0; }
+    #status {
+      margin-top: 1rem;
+      font-family: ui-monospace, monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>CurveEditor – pure-frontend anyui port</h1>
+  <p>
+    Same render module as <a href="https://github.com/koaning/wigglystuff">wigglystuff</a>,
+    driven by AnyuiWidget (no Python kernel). Drag points, change curve type, play.
+  </p>
+
+  <div id="host"></div>
+  <div id="status">loading…</div>
+
+  <script type="module">
+    import CurveEditor from "../anyui/static/curve-editor-cls.js";
+
+    const editor = new CurveEditor({
+      curve: "catmull_rom",
+      alpha: 0.5,
+      show_axes: true,
+      width: 600,
+      height: 360,
+    });
+
+    const host = document.getElementById("host");
+    const status = document.getElementById("status");
+
+    function report() {
+      const pts = editor.get("points") || [];
+      const t = editor.get("t");
+      const x = editor.get("x");
+      const y = editor.get("y");
+      const curve = editor.get("curve");
+      const closed = editor.get("closed");
+      const sel = editor.get("selected_index");
+      status.textContent =
+        `curve=${curve}  closed=${closed}  selected=${sel}\n` +
+        `t=${Number(t).toFixed(3)}  x=${Number(x).toFixed(3)}  y=${Number(y).toFixed(3)}\n` +
+        `points (${pts.length}):\n` +
+        pts.map((p, i) => `  [${i}] ${Number(p.x).toFixed(3)}, ${Number(p.y).toFixed(3)}`).join("\n");
+    }
+
+    // Listen to the traits the editor mutates most often
+    ["points", "t", "x", "y", "curve", "closed", "selected_index", "playing"].forEach((name) => {
+      editor.on(`change:${name}`, report);
+    });
+
+    const view = await editor.create_view({ el: host });
+    report();
+  </script>
+</body>
+</html>
