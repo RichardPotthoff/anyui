@@ -164,7 +164,7 @@ function render({ model, el }) {
 
     // Outline: densify in world, map each point by M (simple + robust first version)
     // tol = max chord-to-arc error in world units ≈ pixelTol / screenScale
-    const pixelTol = 0.5;
+    const pixelTol = 0.25;
     const tolWorld = pixelTol / s;
     const a0 = [Math.cos(startAngle), Math.sin(startAngle)];
     const pts = [];
