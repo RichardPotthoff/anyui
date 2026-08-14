@@ -6,6 +6,8 @@
 import {
   identityMobius,
   composeMobius,
+  composeMobiusRaw,
+  guardAndNormalize,
   applyMobius,
   gestureMobius,
   mobiusToJSON,
@@ -17,7 +19,7 @@ import {
   segsDegreesToRadians,
   transformArcs,
 } from "./geom/arcs.js";
-import { C, cNorm, cExpI } from "./geom/complex.js";
+import { C, cNorm, cExpI, cAbs } from "./geom/complex.js";
 import { cookieOutlines } from "./data/cookie-outlines.js";
 
 function loadOutline(name) {
@@ -93,8 +95,22 @@ function render({ model, el }) {
     return mobiusFromJSON(model.get("mobius"));
   }
 
+  /**
+   * Safe disk for the pole guard.
+   * Grid only reaches `corner`, but a pole just outside still sends nearby
+   * lines through infinity (visual wrap/inversion). Keep the pole at least
+   * poleFactor × corner away from the origin → tighter |c| once d=1.
+   */
+  function currentRmax() {
+    const gMax = bounds.span * 0.7;
+    const corner = Math.hypot(gMax, gMax); // farthest grid corner
+    const poleFactor = 2.5;
+    return corner * poleFactor;
+  }
+
   function setMobius(m) {
-    model.set("mobius", mobiusToJSON(m));
+    const safe = guardAndNormalize(m, currentRmax());
+    model.set("mobius", mobiusToJSON(safe));
     model.save_changes();
   }
 
@@ -164,7 +180,7 @@ function render({ model, el }) {
 
     // Outline: densify in world, map each point by M (simple + robust first version)
     // tol = max chord-to-arc error in world units ≈ pixelTol / screenScale
-    const pixelTol = 0.25;
+    const pixelTol = 0.5;
     const tolWorld = pixelTol / s;
     const a0 = [Math.cos(startAngle), Math.sin(startAngle)];
     const pts = [];
@@ -223,9 +239,15 @@ function render({ model, el }) {
     const currents = activeCurrents();
     const n = Math.min(startAnchors.length, currents.length);
     if (n < 1) return;
-    const G = gestureMobius(startAnchors.slice(0, n), currents.slice(0, n));
-    // Display = G ∘ M0  (screen = G(M0(world)))
-    setMobius(composeMobius(G, M0));
+    const Rmax = currentRmax();
+    const G = gestureMobius(
+      startAnchors.slice(0, n),
+      currents.slice(0, n),
+      1e-8,
+      Rmax
+    );
+    // Display = G ∘ M0  (screen = G(M0(world))); setMobius guards again
+    setMobius(composeMobiusRaw(G, M0));
     draw();
   }
 

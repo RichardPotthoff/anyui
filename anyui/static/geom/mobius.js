@@ -1,6 +1,11 @@
 /**
  * Möbius transforms as (a z + b) / (c z + d), stored as four complexes.
- * Normalization: sqrt(|c|^2 + |d|^2) = 1  (a,b read as scale/rotate + offset when c≈0).
+ *
+ * Safety order:
+ *   1. check / project pole outside |z| <= Rmax  (|c| Rmax < |d|)
+ *   2. only then normalize by dividing through by d  (d' === 1)
+ *
+ * With d = 1, a and b are rotation/scale + translation when c ≈ 0; c is bend.
  */
 
 import {
@@ -15,21 +20,80 @@ export function detMobius(m) {
   return cSub(cMul(m.a, m.d), cMul(m.b, m.c));
 }
 
-/** Normalize so sqrt(|c|^2 + |d|^2) = 1. */
+/**
+ * Keep the pole outside the disk |z| <= Rmax:
+ *   |c| * Rmax < |d|   (with a small epsilon).
+ * Does NOT divide by d yet — call normalizeByD after.
+ */
+export function projectPoleOutside(m, Rmax, eps = 1e-4) {
+  const absC = cAbs(m.c);
+  const absD = cAbs(m.d);
+  const limit = Math.max(Rmax, 1e-9);
+
+  // Already safe (strict with eps)
+  if (absC * limit <= absD * (1 - eps)) {
+    return m;
+  }
+
+  // Need |d| > 0 to place the pole at all
+  if (absD < 1e-15) {
+    // Purely singular denominator direction — fall back to no bend
+    return { a: m.a, b: m.b, c: C(0, 0), d: C(1, 0) };
+  }
+
+  // Shrink c so |c| * Rmax = |d| * (1 - eps)
+  const targetAbsC = (absD * (1 - eps)) / limit;
+  const scale = targetAbsC / absC;
+  return {
+    a: m.a,
+    b: m.b,
+    c: cScale(m.c, scale),
+    d: m.d,
+  };
+}
+
+/** Divide through by d so d' = 1. Requires d ≠ 0 (guard ensures that). */
+export function normalizeByD(m) {
+  const absD = cAbs(m.d);
+  if (absD < 1e-15) {
+    return identityMobius();
+  }
+  return {
+    a: cDiv(m.a, m.d),
+    b: cDiv(m.b, m.d),
+    c: cDiv(m.c, m.d),
+    d: C(1, 0),
+  };
+}
+
+/**
+ * Full pipeline: det check → pole project → d = 1.
+ * Rmax = max |z| we care about (e.g. farthest grid corner).
+ */
+export function guardAndNormalize(m, Rmax, eps = 1e-4) {
+  if (cAbs(detMobius(m)) < 1e-15) {
+    return identityMobius();
+  }
+  return normalizeByD(projectPoleOutside(m, Rmax, eps));
+}
+
+/** @deprecated old name — prefer guardAndNormalize when Rmax is known */
 export function normalizeMobius(m) {
+  // Scale-invariant fallback without pole knowledge: unit denominator coeffs, then d=1 if possible
   const s = Math.sqrt(cAbs2(m.c) + cAbs2(m.d));
   if (!(s > 0)) return identityMobius();
   const inv = 1 / s;
-  return {
+  const scaled = {
     a: cScale(m.a, inv),
     b: cScale(m.b, inv),
     c: cScale(m.c, inv),
     d: cScale(m.d, inv),
   };
+  if (cAbs(scaled.d) < 1e-15) return identityMobius();
+  return normalizeByD(scaled);
 }
 
 export function applyMobius(m, z) {
-  // (a z + b) / (c z + d)
   return cDiv(cAdd(cMul(m.a, z), m.b), cAdd(cMul(m.c, z), m.d));
 }
 
@@ -39,84 +103,89 @@ export function dMobius(m, z) {
   return cDiv(detMobius(m), cMul(den, den));
 }
 
-/** Matrix multiply: (G ∘ M)(z) = G(M(z)) */
-export function composeMobius(G, M) {
-  return normalizeMobius({
+/** Raw matrix product (G ∘ M)(z) = G(M(z)). No normalize — caller guards. */
+export function composeMobiusRaw(G, M) {
+  return {
     a: cAdd(cMul(G.a, M.a), cMul(G.b, M.c)),
     b: cAdd(cMul(G.a, M.b), cMul(G.b, M.d)),
     c: cAdd(cMul(G.c, M.a), cMul(G.d, M.c)),
     d: cAdd(cMul(G.c, M.b), cMul(G.d, M.d)),
-  });
+  };
+}
+
+/** Compose then guard with Rmax. If Rmax omitted, use soft normalizeByD only. */
+export function composeMobius(G, M, Rmax = null) {
+  const product = composeMobiusRaw(G, M);
+  if (Rmax != null && Rmax > 0) {
+    return guardAndNormalize(product, Rmax);
+  }
+  if (cAbs(detMobius(product)) < 1e-15) return identityMobius();
+  if (cAbs(product.d) < 1e-15) return normalizeMobius(product);
+  return normalizeByD(product);
 }
 
 export function translationMobius(beta) {
-  return normalizeMobius({ a: C(1, 0), b: C(beta), c: C(0, 0), d: C(1, 0) });
+  return { a: C(1, 0), b: C(beta), c: C(0, 0), d: C(1, 0) };
 }
 
 /** Similarity G(z) = α z + β */
 export function similarityMobius(alpha, beta) {
-  return normalizeMobius({ a: C(alpha), b: C(beta), c: C(0, 0), d: C(1, 0) });
+  return { a: C(alpha), b: C(beta), c: C(0, 0), d: C(1, 0) };
 }
 
 /**
  * Unique Möbius sending z1→w1, z2→w2, z3→w3 (all distinct).
- * Uses the cross-ratio construction.
+ * Uses the cross-ratio construction. Optional Rmax to guard the result.
  */
-export function mobiusFromThreePairs(z1, w1, z2, w2, z3, w3) {
-  // S sends z1,z2,z3 → 0,1,∞
-  // S(z) = ((z-z1)/(z-z3)) / ((z2-z1)/(z2-z3))
+export function mobiusFromThreePairs(z1, w1, z2, w2, z3, w3, Rmax = null) {
   const S = mobiusSendingTo01Inf(z1, z2, z3);
-  const Sinv = invertMobius(S);
-  // T sends w1,w2,w3 → 0,1,∞
   const T = mobiusSendingTo01Inf(w1, w2, w3);
-  // Map: z --S→ 0,1,∞ --Tinv→ w
-  return composeMobius(invertMobius(T), S);
+  const Tinv = invertMobiusRaw(T);
+  const product = composeMobiusRaw(Tinv, S);
+  if (Rmax != null && Rmax > 0) return guardAndNormalize(product, Rmax);
+  if (cAbs(product.d) < 1e-15) return normalizeMobius(product);
+  return normalizeByD(product);
 }
 
 function mobiusSendingTo01Inf(z1, z2, z3) {
   // ((z-z1)/(z-z3)) * ((z2-z3)/(z2-z1))
-  // a = (z2-z3), b = -z1(z2-z3), c = (z2-z1), d = -z3(z2-z1)
   const z2mz3 = cSub(z2, z3);
   const z2mz1 = cSub(z2, z1);
-  return normalizeMobius({
+  return {
     a: z2mz3,
     b: cScale(cMul(z1, z2mz3), -1),
     c: z2mz1,
     d: cScale(cMul(z3, z2mz1), -1),
-  });
+  };
 }
 
-export function invertMobius(m) {
-  // (d z - b) / (-c z + a) / det, but matrix inverse of [[a,b],[c,d]] is [[d,-b],[-c,a]]/det
+function invertMobiusRaw(m) {
   const det = detMobius(m);
-  return normalizeMobius({
+  return {
     a: cDiv(m.d, det),
     b: cDiv(cScale(m.b, -1), det),
     c: cDiv(cScale(m.c, -1), det),
     d: cDiv(m.a, det),
-  });
+  };
+}
+
+export function invertMobius(m, Rmax = null) {
+  const inv = invertMobiusRaw(m);
+  if (Rmax != null && Rmax > 0) return guardAndNormalize(inv, Rmax);
+  if (cAbs(inv.d) < 1e-15) return normalizeMobius(inv);
+  return normalizeByD(inv);
 }
 
 const EPS = 1e-8;
 
-function distinct(points, eps = EPS) {
-  const out = [];
-  for (const p of points) {
-    if (!out.some((q) => cEq(p, q, eps))) out.push(p);
-  }
-  return out;
-}
-
 /**
  * Build incremental G from gesture anchors.
- * starts/currents are parallel arrays of complex points (screen space).
- * Uses as many distinct pairs as available → 1/2/3 finger families.
+ * starts/currents are parallel arrays of complex points (plane space).
  */
-export function gestureMobius(starts, currents, eps = EPS) {
+export function gestureMobius(starts, currents, eps = EPS, Rmax = null) {
   const n = Math.min(starts.length, currents.length);
   if (n < 1) return identityMobius();
 
-  // Pair and drop near-duplicates on the start side
   const pairs = [];
   for (let i = 0; i < n; i++) {
     if (pairs.some((pr) => cEq(pr.z, starts[i], eps))) continue;
@@ -126,8 +195,7 @@ export function gestureMobius(starts, currents, eps = EPS) {
   if (pairs.length === 0) return identityMobius();
 
   if (pairs.length === 1) {
-    const beta = cSub(pairs[0].w, pairs[0].z);
-    return translationMobius(beta);
+    return translationMobius(cSub(pairs[0].w, pairs[0].z));
   }
 
   if (pairs.length === 2) {
@@ -141,20 +209,13 @@ export function gestureMobius(starts, currents, eps = EPS) {
     return similarityMobius(alpha, beta);
   }
 
-  // 3+ → full Möbius from first three distinct pairs
   const [p0, p1, p2] = pairs;
   if (cEq(p0.w, p1.w, eps) || cEq(p0.w, p2.w, eps) || cEq(p1.w, p2.w, eps)) {
-    // targets not distinct → fall back to similarity on first two
-    return gestureMobius(
-      [p0.z, p1.z],
-      [p0.w, p1.w],
-      eps
-    );
+    return gestureMobius([p0.z, p1.z], [p0.w, p1.w], eps, Rmax);
   }
-  return mobiusFromThreePairs(p0.z, p0.w, p1.z, p1.w, p2.z, p2.w);
+  return mobiusFromThreePairs(p0.z, p0.w, p1.z, p1.w, p2.z, p2.w, Rmax);
 }
 
-/** Serialize / deserialize for the anyui model */
 export function mobiusToJSON(m) {
   const pack = (z) => [z.re, z.im];
   return { a: pack(m.a), b: pack(m.b), c: pack(m.c), d: pack(m.d) };
@@ -163,12 +224,12 @@ export function mobiusToJSON(m) {
 export function mobiusFromJSON(obj) {
   if (!obj) return identityMobius();
   const unpack = (v) => (Array.isArray(v) ? C(v[0], v[1]) : C(v));
-  return normalizeMobius({
+  return {
     a: unpack(obj.a ?? [1, 0]),
     b: unpack(obj.b ?? [0, 0]),
     c: unpack(obj.c ?? [0, 0]),
     d: unpack(obj.d ?? [1, 0]),
-  });
+  };
 }
 
 export function xyToC(x, y) {
