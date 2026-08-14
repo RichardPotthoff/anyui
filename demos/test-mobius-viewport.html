@@ -28,7 +28,8 @@
   <h1>Möbius viewport</h1>
   <p>
     Cookie-cutter outlines as turtle arcs. One composed Möbius on the model.
-    1 finger pan · 2 pan/zoom/rotate · 3 bend. Works with touch and mouse.
+    Default: free gestures (pan / 2-finger / 3-finger). Choose
+    <strong>2</strong> or <strong>3 fix points</strong> for precise Move/Drag handles (mouse-friendly).
   </p>
   <div id="host"></div>
   <div id="status">…</div>
@@ -49,15 +50,23 @@
       const m = mobiusFromJSON(view.get("mobius"));
       const fmt = (z) =>
         `${z.re.toFixed(3)}${z.im >= 0 ? "+" : ""}${z.im.toFixed(3)}i`;
+      // d should stay ~1 after guardAndNormalize; |c| bounded by 1/Rmax
+      const n = view.get("fixPointCount") || 0;
       status.textContent =
-        `outline=${view.get("outline")}\n` +
-        `a=${fmt(m.a)}  b=${fmt(m.b)}\n` +
+        `outline=${view.get("outline")}  fixPoints=${n || "none"}` +
+        (n >= 2
+          ? `  active=${(view.get("activePoint") || 0) + 1}  action=${view.get("fixAction") || "drag"}`
+          : "") +
+        `\na=${fmt(m.a)}  b=${fmt(m.b)}\n` +
         `c=${fmt(m.c)}  d=${fmt(m.d)}\n` +
-        `|c|=${cAbs(m.c).toFixed(4)}  (bend ~ 0 when small)`;
+        `|c|=${cAbs(m.c).toFixed(4)}  |d|=${cAbs(m.d).toFixed(4)}  (d→1; pole guard on)`;
     }
 
     view.on("change:mobius", report);
     view.on("change:outline", report);
+    view.on("change:fixPointCount", report);
+    view.on("change:activePoint", report);
+    view.on("change:fixAction", report);
 
     await view.create_view({ el: document.getElementById("host") });
     report();

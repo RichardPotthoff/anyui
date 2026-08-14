@@ -46,6 +46,10 @@
   font-size: 13px;
 }
 
+.mobius-viewport-editbar select {
+  min-width: 10rem;
+}
+
 .mobius-viewport-canvas {
   display: block;
   max-width: 100%;
