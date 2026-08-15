@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>anyui – Overlay + PointHandles</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 1rem;
+      max-width: 640px;
+    }
+    h1 { font-size: 1.2rem; margin: 0 0 0.25rem; }
+    p { color: #555; margin: 0 0 0.75rem; font-size: 0.95rem; }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+    .controls button, .controls select {
+      font: inherit;
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+    }
+    .controls button:active { background: #e2e8f0; }
+    #status {
+      margin-top: 0.75rem;
+      font-family: ui-monospace, monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 0.6rem 0.75rem;
+    }
+    #host {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+  <h1>Overlay + PointHandles</h1>
+  <p>
+    Two layers share the same view transform \(V\). Content draws a shape + grid;
+    PointHandles draws the three points on top. Change the active layer to route
+    pointer events; opacity shows which layer is in front.
+  </p>
+
+  <div class="controls">
+    <label>Active layer
+      <select id="activeSel">
+        <option value="0">0 – Content</option>
+        <option value="1" selected>1 – PointHandles</option>
+      </select>
+    </label>
+    <button type="button" id="btnZoomIn">Zoom +</button>
+    <button type="button" id="btnZoomOut">Zoom −</button>
+    <button type="button" id="btnReset">Reset view</button>
+    <button type="button" id="btnPanLeft">Pan ←</button>
+    <button type="button" id="btnPanRight">Pan →</button>
+  </div>
+
+  <div id="host"></div>
+  <div id="status">…</div>
+
+  <script type="module">
+    import Overlay from "../anyui/static/overlay-cls.js";
+    import SimpleContent from "../anyui/static/simple-content-cls.js";
+    import PointHandles from "../anyui/static/point-handles-cls.js";
+
+    const W = 480;
+    const H = 480;
+    const initialView = { scale: 80, tx: 0, ty: 0 };
+    const initialPoints = [
+      [-1.2, 0.3],
+      [1.1, 0.2],
+      [0.1, 1.4],
+    ];
+
+    // Shared state lives on the two child models; we keep them in sync by hand
+    // for this first experiment (later a composite will own the wiring).
+    const content = new SimpleContent({
+      view: { ...initialView },
+      width: W,
+      height: H,
+      color: "#2563eb",
+    });
+
+    const handles = new PointHandles({
+      points: initialPoints.map((p) => [...p]),
+      view: { ...initialView },
+      width: W,
+      height: H,
+      active: -1,
+      radius: 12,
+    });
+
+    const overlay = new Overlay({
+      children: [content, handles],
+      activeLayer: 1,
+      opacities: [0.85, 1],
+      width: W,
+      height: H,
+    });
+
+    // --- keep the two views identical ---
+    function setSharedView(v) {
+      content.set("view", { ...v });
+      content.save_changes();
+      handles.set("view", { ...v });
+      handles.save_changes();
+      report();
+    }
+
+    // --- UI controls ---
+    const activeSel = document.getElementById("activeSel");
+    activeSel.addEventListener("change", () => {
+      const idx = Number(activeSel.value);
+      overlay.set("activeLayer", idx);
+      // dim the inactive layer a bit more
+      const opacities = idx === 0 ? [1, 0.35] : [0.55, 1];
+      overlay.set("opacities", opacities);
+      overlay.save_changes();
+      report();
+    });
+
+    document.getElementById("btnZoomIn").onclick = () => {
+      const v = handles.get("view");
+      setSharedView({ ...v, scale: v.scale * 1.2 });
+    };
+    document.getElementById("btnZoomOut").onclick = () => {
+      const v = handles.get("view");
+      setSharedView({ ...v, scale: v.scale / 1.2 });
+    };
+    document.getElementById("btnReset").onclick = () => {
+      setSharedView({ ...initialView });
+    };
+    document.getElementById("btnPanLeft").onclick = () => {
+      const v = handles.get("view");
+      setSharedView({ ...v, tx: v.tx + 30 });
+    };
+    document.getElementById("btnPanRight").onclick = () => {
+      const v = handles.get("view");
+      setSharedView({ ...v, tx: v.tx - 30 });
+    };
+
+    // --- status ---
+    const status = document.getElementById("status");
+    function report() {
+      const v = handles.get("view");
+      const pts = handles.get("points") || [];
+      const active = overlay.get("activeLayer");
+      status.textContent =
+        `activeLayer=${active}  view.scale=${v.scale.toFixed(1)}  tx=${v.tx.toFixed(0)}  ty=${v.ty.toFixed(0)}\n` +
+        `points: ${pts.map((p) => `(${p[0].toFixed(2)}, ${p[1].toFixed(2)})`).join("  ")}`;
+    }
+
+    handles.on("change:points", report);
+    handles.on("change:view", report);
+    overlay.on("change:activeLayer", report);
+
+    await overlay.create_view({ el: document.getElementById("host") });
+    report();
+  </script>
+</body>
+</html>

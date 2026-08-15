@@ -1,0 +1,16 @@
+/* PointHandles */
+
+.point-handles {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  user-select: none;
+}
+
+.point-handles canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
