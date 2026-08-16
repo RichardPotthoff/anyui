@@ -230,7 +230,7 @@ function render({ model, el }) {
   function currentRmax() {
     const gMax = bounds.span * 0.7;
     const corner = Math.hypot(gMax, gMax);
-    const poleFactor = 2.5;
+    const poleFactor = 1.0;
     return corner * poleFactor;
   }
 
