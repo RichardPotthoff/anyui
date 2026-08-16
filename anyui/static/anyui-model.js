@@ -1,6 +1,5 @@
 // static/anyui-model.js
 
-
 const classCounters = new Map();
 
 export class AnyuiWidget {
@@ -39,7 +38,8 @@ export class AnyuiWidget {
 
         // Mirror the Python class attributes
         this._esm = null;
-        this._css = null;
+        this._css = _css_promise;
+//null;
 
         widgetManager.register_model(this);
     }catch(err){
@@ -271,6 +271,8 @@ export class WidgetManager {
         return {el:container,cleanup:cleanup};
     }
 }
+
+const _css_promise = loadCSS('./anyui.css');
 
 export const widgetManager = new WidgetManager();
 
