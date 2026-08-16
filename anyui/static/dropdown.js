@@ -7,15 +7,18 @@ function render({ model, el }) {
     label.textContent = model.get("description") || "";
     label.style.minWidth = model.get("style")?.descriptionWidth  || "140px";
     label.style.textAlign = "right";
+    
     // Apply the description_width from the style object
     const style = model.get("style") || {};
-    if (style.description_width) {
-        label.style.width = style.description_width;
+    if (style.descriptionWidth) {
+        label.style.width = style.descriptionWidth;
         label.style.display = "inline-block";
     }
 
     const select = document.createElement("select");
-    
+    select.style.flex = "1";
+    select.style.minWidth = "0";
+    select.style.boxSizing = "border-box";
     // Populate options from the JSON array
     const options = model.get("options") || [];
     options.forEach((opt, idx) => {
