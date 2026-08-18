@@ -15,6 +15,7 @@ export default class SimpleContent extends AnyuiWidget {
       background: "#f8fafc", // set null for transparent (Overlay multi-layer)
       showGrid: true,
       visible: true,
+      mobius: null,
     }
   ) {
     const state = {
@@ -25,6 +26,7 @@ export default class SimpleContent extends AnyuiWidget {
       background: "#f8fafc",
       showGrid: true,
       visible: true,
+      mobius: null,
       ...initialState,
     };
     super(state);

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>anyui – dual Overlay layers</title>
+  <title>anyui – dual Overlay + Möbius link</title>
   <style>
     body {
       font-family: system-ui, -apple-system, sans-serif;
@@ -50,14 +50,15 @@
   </style>
 </head>
 <body>
-  <h1>Dual Overlay – source / image layers</h1>
+  <h1>Dual Overlay + Möbius link</h1>
   <p>
-    Four layers, two independent views \(V_s\) and \(V_i\). Drawing layers use a
-    clear canvas; the Overlay supplies a single paper background.
+    Source (blue) and image (orange) share the scene via a Möbius \(M\).
+    Clear canvases; Overlay supplies the paper background.
   </p>
   <p class="hint">
-    Active side owns pan/zoom (1-finger drag, wheel, pinch). Handles still win
-    on hit. No Möbius link yet — points on each side move independently.
+    <b>Source side:</b> drag handles → move \(z_i\), keep \(M\), image points follow \(w_i=M(z_i)\).<br/>
+    <b>Image side:</b> drag handles → move \(w_i\), refit \(M\) from the three pairs.<br/>
+    Pan/zoom updates only the active side’s view \(V\). Image drawing + grid are under \(M\) then \(V_i\).
   </p>
 
   <div class="controls">
@@ -71,13 +72,15 @@
     <button type="button" id="btnZoomOut">Zoom −</button>
     <button type="button" id="btnReset">Reset all</button>
     <button type="button" id="btnSyncViews">Sync \(V_i \leftarrow V_s\)</button>
+    <button type="button" id="btnIdentity">\(M \leftarrow\) identity</button>
   </div>
   <div class="controls" id="visControls">
     <label><input type="checkbox" id="visSrcContent" checked /> Src drawing</label>
     <label><input type="checkbox" id="visSrcHandles" checked /> Src handles</label>
     <label><input type="checkbox" id="visImgContent" checked /> Img drawing</label>
     <label><input type="checkbox" id="visImgHandles" checked /> Img handles</label>
-    <label><input type="checkbox" id="visGrid" checked /> Grid</label>
+    <label><input type="checkbox" id="visSrcGrid" checked /> Src grid</label>
+    <label><input type="checkbox" id="visImgGrid" checked /> Img grid</label>
   </div>
 
   <div id="host"></div>
@@ -87,17 +90,26 @@
     import Overlay from "../anyui/static/overlay-cls.js";
     import SimpleContent from "../anyui/static/simple-content-cls.js";
     import PointHandles from "../anyui/static/point-handles-cls.js";
+    import {
+      identityMobius,
+      mobiusFromThreePairs,
+      applyMobius,
+      mobiusToJSON,
+      mobiusFromJSON,
+      guardAndNormalize,
+    } from "../anyui/static/geom/mobius.js";
+    import { C } from "../anyui/static/geom/complex.js";
 
     const W = 480;
     const H = 480;
+    const Rmax = 6; // pole guard radius in plane units
     const initialView = { scale: 80, tx: 0, ty: 0 };
     const initialSourcePts = [
       [-1.2, 0.3],
       [1.1, 0.2],
       [0.1, 1.4],
     ];
-    // Image points start offset so the two sets are visually distinct
-    // before any linking exists.
+    // Start with a mild non-identity map so image ≠ source at load
     const initialImagePts = [
       [-0.9, -0.2],
       [1.3, 0.5],
@@ -110,8 +122,9 @@
       width: W,
       height: H,
       color: "#2563eb",
-      background: null,   // clear – paper comes from Overlay
+      background: null,
       showGrid: true,
+      mobius: null, // source is always untransformed plane
     });
 
     const handlesSource = new PointHandles({
@@ -129,7 +142,8 @@
       height: H,
       color: "#c2410c",
       background: null,
-      showGrid: false,    // only source draws the grid, to reduce clutter
+      showGrid: true,
+      mobius: mobiusToJSON(identityMobius()),
     });
 
     const handlesImage = new PointHandles({
@@ -141,15 +155,61 @@
       radius: 12,
     });
 
-    // Layer order: source content, source handles, image content, image handles
-    // Active *side* controls matched opacity + which layer receives events.
-    // Prefer handles layer for the active side so points stay draggable.
     const overlay = new Overlay({
       children: [contentSource, handlesSource, contentImage, handlesImage],
       activeLayer: 1,
       opacities: [1, 1, 0.5, 0.5],
       width: W,
       height: H,
+    });
+
+    // ---- Möbius state ----
+    let M = identityMobius();
+    let syncing = false; // suppress feedback when we push points programmatically
+
+    function ptsToC(pts) {
+      return pts.map((p) => C(p[0], p[1]));
+    }
+
+    function fitMFromPoints() {
+      const zs = ptsToC(handlesSource.get("points") || []);
+      const ws = ptsToC(handlesImage.get("points") || []);
+      if (zs.length < 3 || ws.length < 3) return;
+      M = mobiusFromThreePairs(zs[0], ws[0], zs[1], ws[1], zs[2], ws[2], Rmax);
+      M = guardAndNormalize(M, Rmax);
+      contentImage.set("mobius", mobiusToJSON(M));
+      contentImage.save_changes();
+    }
+
+    function pushImagePointsFromM() {
+      const zs = handlesSource.get("points") || [];
+      const ws = zs.map(([x, y]) => {
+        const w = applyMobius(M, C(x, y));
+        return [w.re, w.im];
+      });
+      syncing = true;
+      handlesImage.set("points", ws);
+      handlesImage.save_changes();
+      syncing = false;
+      contentImage.set("mobius", mobiusToJSON(M));
+      contentImage.save_changes();
+    }
+
+    // Initial fit from the starting point pairs
+    fitMFromPoints();
+
+    // Source handles moved → keep M, update image points
+    handlesSource.on("change:points", () => {
+      if (syncing) return;
+      pushImagePointsFromM();
+      report();
+    });
+
+    // Image handles moved → refit M from pairs
+    handlesImage.on("change:points", () => {
+      if (syncing) return;
+      fitMFromPoints();
+      report();
     });
 
     // ---- view helpers (independent V_s and V_i) ----
@@ -173,7 +233,7 @@
       report();
     }
 
-    let currentSide = "source"; // "source" | "image"
+    let currentSide = "source";
 
     function setActiveView(v) {
       if (currentSide === "source") setViewSource(v);
@@ -191,8 +251,6 @@
 
     function applyActiveSide(side) {
       currentSide = side;
-      // Matched opacity per side: active side = 1, inactive side = 0.5
-      // Event target = handles layer of the active side (so points stay hittable)
       if (side === "source") {
         overlay.set("activeLayer", 1);
         overlay.set("opacities", [1, 1, 0.5, 0.5]);
@@ -208,7 +266,6 @@
       applyActiveSide(activeSel.value);
     });
 
-    // Visibility toggles → model traits
     function wireVis(id, model, trait) {
       const el = document.getElementById(id);
       el.addEventListener("change", () => {
@@ -220,7 +277,8 @@
     wireVis("visSrcHandles", handlesSource, "visible");
     wireVis("visImgContent", contentImage, "visible");
     wireVis("visImgHandles", handlesImage, "visible");
-    wireVis("visGrid", contentSource, "showGrid");
+    wireVis("visSrcGrid", contentSource, "showGrid");
+    wireVis("visImgGrid", contentImage, "showGrid");
 
     document.getElementById("btnZoomIn").onclick = () => {
       const v = getActiveView();
@@ -233,18 +291,25 @@
     document.getElementById("btnReset").onclick = () => {
       setViewSource({ ...initialView });
       setViewImage({ ...initialView });
+      syncing = true;
       handlesSource.set("points", initialSourcePts.map((p) => [...p]));
       handlesSource.set("active", -1);
       handlesSource.save_changes();
       handlesImage.set("points", initialImagePts.map((p) => [...p]));
       handlesImage.set("active", -1);
       handlesImage.save_changes();
+      syncing = false;
+      fitMFromPoints();
       report();
     };
     document.getElementById("btnSyncViews").onclick = () => {
-      // Copy source view onto image view (handy while exploring)
       const vs = handlesSource.get("view");
       setViewImage({ ...vs });
+    };
+    document.getElementById("btnIdentity").onclick = () => {
+      M = identityMobius();
+      pushImagePointsFromM(); // w_i ← z_i
+      report();
     };
 
     // ---- status ----
@@ -254,18 +319,21 @@
       const vi = handlesImage.get("view");
       const ps = handlesSource.get("points") || [];
       const pi = handlesImage.get("points") || [];
-      const active = overlay.get("activeLayer");
+      const mj = mobiusToJSON(M);
+      const fmt = (z) =>
+        Array.isArray(z)
+          ? `(${(+z[0]).toFixed(2)},${(+z[1]).toFixed(2)})`
+          : "?";
       status.textContent =
-        `side=${currentSide}  activeLayer=${active}` +
+        `side=${currentSide}` +
         `\nV_s  scale=${vs.scale.toFixed(1)}  tx=${vs.tx.toFixed(0)}  ty=${vs.ty.toFixed(0)}` +
         `\nV_i  scale=${vi.scale.toFixed(1)}  tx=${vi.tx.toFixed(0)}  ty=${vi.ty.toFixed(0)}` +
+        `\nM    a=${fmt(mj.a)}  b=${fmt(mj.b)}  c=${fmt(mj.c)}  d=${fmt(mj.d)}` +
         `\nsrc pts: ${ps.map((p) => `(${p[0].toFixed(2)},${p[1].toFixed(2)})`).join(" ")}` +
         `\nimg pts: ${pi.map((p) => `(${p[0].toFixed(2)},${p[1].toFixed(2)})`).join(" ")}`;
     }
 
-    handlesSource.on("change:points", report);
     handlesSource.on("change:view", report);
-    handlesImage.on("change:points", report);
     handlesImage.on("change:view", report);
     overlay.on("change:activeLayer", report);
 
