@@ -9,6 +9,7 @@
  *   color          – stroke colour (default #2563eb)
  *   background     – canvas fill colour, or null/false for clear (transparent)
  *   showGrid       – boolean (default true)
+ *   visible        – if false, draw nothing (default true)
  *   shape          – optional array of [x,y] plane points (closed path)
  */
 
@@ -59,6 +60,8 @@ function render({ model, el }) {
     const ctx = canvas.getContext("2d");
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
+
+    if (model.get("visible") === false) return;
 
     // Optional opaque / tinted background. null/false → leave transparent
     // so lower Overlay layers show through.
@@ -135,6 +138,7 @@ function render({ model, el }) {
   model.on("change:color", onChange);
   model.on("change:background", onChange);
   model.on("change:showGrid", onChange);
+  model.on("change:visible", onChange);
   model.on("change:shape", onChange);
 
   draw();
@@ -146,6 +150,7 @@ function render({ model, el }) {
     model.off("change:color", onChange);
     model.off("change:background", onChange);
     model.off("change:showGrid", onChange);
+    model.off("change:visible", onChange);
     model.off("change:shape", onChange);
   };
 }

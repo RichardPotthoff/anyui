@@ -7,6 +7,7 @@
  *   width, height
  *   active   – index of the currently dragged / highlighted point (or -1)
  *   radius   – pixel radius of the handles (default 10)
+ *   visible  – if false, draw nothing and ignore pointer hits (default true)
  *
  * Plane → screen:  sx = width/2 + (x * scale + tx)
  *                  sy = height/2 - (y * scale + ty)   // y up
@@ -68,6 +69,9 @@ function render({ model, el }) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
 
+    // Hidden entirely when visible is false
+    if (model.get("visible") === false) return;
+
     // Transparent by default – the layer only draws the handles
     const points = getPoints();
     const view = getView();
@@ -128,6 +132,7 @@ function render({ model, el }) {
   }
 
   function onPointerDown(ev) {
+    if (model.get("visible") === false) return; // hidden → no hit testing
     const [sx, sy] = pointerXY(ev);
     const hit = findHit(sx, sy);
     if (hit < 0) return; // miss → let event bubble so Overlay / host can pan-zoom
@@ -204,6 +209,7 @@ function render({ model, el }) {
   model.on("change:height", onChange);
   model.on("change:active", onChange);
   model.on("change:radius", onChange);
+  model.on("change:visible", onChange);
 
   draw();
 
@@ -218,6 +224,7 @@ function render({ model, el }) {
     model.off("change:height", onChange);
     model.off("change:active", onChange);
     model.off("change:radius", onChange);
+    model.off("change:visible", onChange);
   };
 }
 

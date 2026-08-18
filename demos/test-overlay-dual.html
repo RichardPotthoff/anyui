@@ -28,6 +28,8 @@
       background: #fff;
     }
     .controls button:active { background: #e2e8f0; }
+    .controls label { font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.25rem; }
+    #visControls { margin-top: -0.25rem; }
     #status {
       margin-top: 0.75rem;
       font-family: ui-monospace, monospace;
@@ -59,18 +61,23 @@
   </p>
 
   <div class="controls">
-    <label>Active
+    <label>Active side
       <select id="activeSel">
-        <option value="0">0 – Source content</option>
-        <option value="1" selected>1 – Source handles</option>
-        <option value="2">2 – Image content</option>
-        <option value="3">3 – Image handles</option>
+        <option value="source" selected>Source (blue)</option>
+        <option value="image">Image (orange)</option>
       </select>
     </label>
     <button type="button" id="btnZoomIn">Zoom +</button>
     <button type="button" id="btnZoomOut">Zoom −</button>
     <button type="button" id="btnReset">Reset all</button>
     <button type="button" id="btnSyncViews">Sync \(V_i \leftarrow V_s\)</button>
+  </div>
+  <div class="controls" id="visControls">
+    <label><input type="checkbox" id="visSrcContent" checked /> Src drawing</label>
+    <label><input type="checkbox" id="visSrcHandles" checked /> Src handles</label>
+    <label><input type="checkbox" id="visImgContent" checked /> Img drawing</label>
+    <label><input type="checkbox" id="visImgHandles" checked /> Img handles</label>
+    <label><input type="checkbox" id="visGrid" checked /> Grid</label>
   </div>
 
   <div id="host"></div>
@@ -135,11 +142,12 @@
     });
 
     // Layer order: source content, source handles, image content, image handles
-    // Active layer is raised via Overlay z-index + pointer-events.
+    // Active *side* controls matched opacity + which layer receives events.
+    // Prefer handles layer for the active side so points stay draggable.
     const overlay = new Overlay({
       children: [contentSource, handlesSource, contentImage, handlesImage],
       activeLayer: 1,
-      opacities: [0.9, 1, 0.55, 0.55],
+      opacities: [1, 1, 0.5, 0.5],
       width: W,
       height: H,
     });
@@ -165,19 +173,15 @@
       report();
     }
 
-    /** Which side owns the current active layer? 0 = source, 1 = image */
-    function activeSide() {
-      const idx = overlay.get("activeLayer") ?? 0;
-      return idx <= 1 ? 0 : 1;
-    }
+    let currentSide = "source"; // "source" | "image"
 
     function setActiveView(v) {
-      if (activeSide() === 0) setViewSource(v);
+      if (currentSide === "source") setViewSource(v);
       else setViewImage(v);
     }
 
     function getActiveView() {
-      return activeSide() === 0
+      return currentSide === "source"
         ? handlesSource.get("view")
         : handlesImage.get("view");
     }
@@ -185,36 +189,38 @@
     // ---- UI controls ----
     const activeSel = document.getElementById("activeSel");
 
-    function applyActive(idx) {
-      overlay.set("activeLayer", idx);
-      // Source side slightly stronger when active; image side stronger when active.
-      // Inactive side stays readable through clear canvases.
-      let opacities;
-      if (idx <= 1) {
-        // source active
-        opacities = [
-          idx === 0 ? 1 : 0.85,
-          idx === 1 ? 1 : 0.85,
-          0.45,
-          0.45,
-        ];
+    function applyActiveSide(side) {
+      currentSide = side;
+      // Matched opacity per side: active side = 1, inactive side = 0.5
+      // Event target = handles layer of the active side (so points stay hittable)
+      if (side === "source") {
+        overlay.set("activeLayer", 1);
+        overlay.set("opacities", [1, 1, 0.5, 0.5]);
       } else {
-        // image active
-        opacities = [
-          0.45,
-          0.45,
-          idx === 2 ? 1 : 0.85,
-          idx === 3 ? 1 : 0.85,
-        ];
+        overlay.set("activeLayer", 3);
+        overlay.set("opacities", [0.5, 0.5, 1, 1]);
       }
-      overlay.set("opacities", opacities);
       overlay.save_changes();
       report();
     }
 
     activeSel.addEventListener("change", () => {
-      applyActive(Number(activeSel.value));
+      applyActiveSide(activeSel.value);
     });
+
+    // Visibility toggles → model traits
+    function wireVis(id, model, trait) {
+      const el = document.getElementById(id);
+      el.addEventListener("change", () => {
+        model.set(trait, el.checked);
+        model.save_changes();
+      });
+    }
+    wireVis("visSrcContent", contentSource, "visible");
+    wireVis("visSrcHandles", handlesSource, "visible");
+    wireVis("visImgContent", contentImage, "visible");
+    wireVis("visImgHandles", handlesImage, "visible");
+    wireVis("visGrid", contentSource, "showGrid");
 
     document.getElementById("btnZoomIn").onclick = () => {
       const v = getActiveView();
@@ -249,9 +255,8 @@
       const ps = handlesSource.get("points") || [];
       const pi = handlesImage.get("points") || [];
       const active = overlay.get("activeLayer");
-      const side = activeSide() === 0 ? "source" : "image";
       status.textContent =
-        `activeLayer=${active} (${side})` +
+        `side=${currentSide}  activeLayer=${active}` +
         `\nV_s  scale=${vs.scale.toFixed(1)}  tx=${vs.tx.toFixed(0)}  ty=${vs.ty.toFixed(0)}` +
         `\nV_i  scale=${vi.scale.toFixed(1)}  tx=${vi.tx.toFixed(0)}  ty=${vi.ty.toFixed(0)}` +
         `\nsrc pts: ${ps.map((p) => `(${p[0].toFixed(2)},${p[1].toFixed(2)})`).join(" ")}` +
@@ -266,7 +271,7 @@
 
     const host = document.getElementById("host");
     await overlay.create_view({ el: host });
-    applyActive(1);
+    applyActiveSide("source");
     report();
 
     // =====================================================================

@@ -17,6 +17,7 @@ export default class PointHandles extends AnyuiWidget {
       height: 480,
       active: -1,
       radius: 11,
+      visible: true,
     }
   ) {
     const state = {
@@ -30,6 +31,7 @@ export default class PointHandles extends AnyuiWidget {
       height: 480,
       active: -1,
       radius: 11,
+      visible: true,
       ...initialState,
     };
     super(state);
