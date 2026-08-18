@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>anyui – dual Overlay layers</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 1rem;
+      max-width: 640px;
+    }
+    h1 { font-size: 1.2rem; margin: 0 0 0.25rem; }
+    p { color: #555; margin: 0 0 0.5rem; font-size: 0.95rem; }
+    .hint { font-size: 0.88rem; color: #64748b; margin-bottom: 0.75rem; }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+    .controls button, .controls select {
+      font: inherit;
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+    }
+    .controls button:active { background: #e2e8f0; }
+    #status {
+      margin-top: 0.75rem;
+      font-family: ui-monospace, monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 0.6rem 0.75rem;
+    }
+    #host {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+      touch-action: none;
+      position: relative;
+    }
+  </style>
+</head>
+<body>
+  <h1>Dual Overlay – source / image layers</h1>
+  <p>
+    Four layers, two independent views \(V_s\) and \(V_i\). Drawing layers use a
+    clear canvas; the Overlay supplies a single paper background.
+  </p>
+  <p class="hint">
+    Active side owns pan/zoom (1-finger drag, wheel, pinch). Handles still win
+    on hit. No Möbius link yet — points on each side move independently.
+  </p>
+
+  <div class="controls">
+    <label>Active
+      <select id="activeSel">
+        <option value="0">0 – Source content</option>
+        <option value="1" selected>1 – Source handles</option>
+        <option value="2">2 – Image content</option>
+        <option value="3">3 – Image handles</option>
+      </select>
+    </label>
+    <button type="button" id="btnZoomIn">Zoom +</button>
+    <button type="button" id="btnZoomOut">Zoom −</button>
+    <button type="button" id="btnReset">Reset all</button>
+    <button type="button" id="btnSyncViews">Sync \(V_i \leftarrow V_s\)</button>
+  </div>
+
+  <div id="host"></div>
+  <div id="status">…</div>
+
+  <script type="module">
+    import Overlay from "../anyui/static/overlay-cls.js";
+    import SimpleContent from "../anyui/static/simple-content-cls.js";
+    import PointHandles from "../anyui/static/point-handles-cls.js";
+
+    const W = 480;
+    const H = 480;
+    const initialView = { scale: 80, tx: 0, ty: 0 };
+    const initialSourcePts = [
+      [-1.2, 0.3],
+      [1.1, 0.2],
+      [0.1, 1.4],
+    ];
+    // Image points start offset so the two sets are visually distinct
+    // before any linking exists.
+    const initialImagePts = [
+      [-0.9, -0.2],
+      [1.3, 0.5],
+      [0.0, 1.1],
+    ];
+
+    // ---- four child widgets ----
+    const contentSource = new SimpleContent({
+      view: { ...initialView },
+      width: W,
+      height: H,
+      color: "#2563eb",
+      background: null,   // clear – paper comes from Overlay
+      showGrid: true,
+    });
+
+    const handlesSource = new PointHandles({
+      points: initialSourcePts.map((p) => [...p]),
+      view: { ...initialView },
+      width: W,
+      height: H,
+      active: -1,
+      radius: 12,
+    });
+
+    const contentImage = new SimpleContent({
+      view: { ...initialView },
+      width: W,
+      height: H,
+      color: "#c2410c",
+      background: null,
+      showGrid: false,    // only source draws the grid, to reduce clutter
+    });
+
+    const handlesImage = new PointHandles({
+      points: initialImagePts.map((p) => [...p]),
+      view: { ...initialView },
+      width: W,
+      height: H,
+      active: -1,
+      radius: 12,
+    });
+
+    // Layer order: source content, source handles, image content, image handles
+    // Active layer is raised via Overlay z-index + pointer-events.
+    const overlay = new Overlay({
+      children: [contentSource, handlesSource, contentImage, handlesImage],
+      activeLayer: 1,
+      opacities: [0.9, 1, 0.55, 0.55],
+      width: W,
+      height: H,
+    });
+
+    // ---- view helpers (independent V_s and V_i) ----
+    function setViewSource(v) {
+      const scale = Math.min(800, Math.max(8, v.scale));
+      const next = { scale, tx: v.tx, ty: v.ty };
+      contentSource.set("view", { ...next });
+      contentSource.save_changes();
+      handlesSource.set("view", { ...next });
+      handlesSource.save_changes();
+      report();
+    }
+
+    function setViewImage(v) {
+      const scale = Math.min(800, Math.max(8, v.scale));
+      const next = { scale, tx: v.tx, ty: v.ty };
+      contentImage.set("view", { ...next });
+      contentImage.save_changes();
+      handlesImage.set("view", { ...next });
+      handlesImage.save_changes();
+      report();
+    }
+
+    /** Which side owns the current active layer? 0 = source, 1 = image */
+    function activeSide() {
+      const idx = overlay.get("activeLayer") ?? 0;
+      return idx <= 1 ? 0 : 1;
+    }
+
+    function setActiveView(v) {
+      if (activeSide() === 0) setViewSource(v);
+      else setViewImage(v);
+    }
+
+    function getActiveView() {
+      return activeSide() === 0
+        ? handlesSource.get("view")
+        : handlesImage.get("view");
+    }
+
+    // ---- UI controls ----
+    const activeSel = document.getElementById("activeSel");
+
+    function applyActive(idx) {
+      overlay.set("activeLayer", idx);
+      // Source side slightly stronger when active; image side stronger when active.
+      // Inactive side stays readable through clear canvases.
+      let opacities;
+      if (idx <= 1) {
+        // source active
+        opacities = [
+          idx === 0 ? 1 : 0.85,
+          idx === 1 ? 1 : 0.85,
+          0.45,
+          0.45,
+        ];
+      } else {
+        // image active
+        opacities = [
+          0.45,
+          0.45,
+          idx === 2 ? 1 : 0.85,
+          idx === 3 ? 1 : 0.85,
+        ];
+      }
+      overlay.set("opacities", opacities);
+      overlay.save_changes();
+      report();
+    }
+
+    activeSel.addEventListener("change", () => {
+      applyActive(Number(activeSel.value));
+    });
+
+    document.getElementById("btnZoomIn").onclick = () => {
+      const v = getActiveView();
+      setActiveView({ ...v, scale: v.scale * 1.2 });
+    };
+    document.getElementById("btnZoomOut").onclick = () => {
+      const v = getActiveView();
+      setActiveView({ ...v, scale: v.scale / 1.2 });
+    };
+    document.getElementById("btnReset").onclick = () => {
+      setViewSource({ ...initialView });
+      setViewImage({ ...initialView });
+      handlesSource.set("points", initialSourcePts.map((p) => [...p]));
+      handlesSource.set("active", -1);
+      handlesSource.save_changes();
+      handlesImage.set("points", initialImagePts.map((p) => [...p]));
+      handlesImage.set("active", -1);
+      handlesImage.save_changes();
+      report();
+    };
+    document.getElementById("btnSyncViews").onclick = () => {
+      // Copy source view onto image view (handy while exploring)
+      const vs = handlesSource.get("view");
+      setViewImage({ ...vs });
+    };
+
+    // ---- status ----
+    const status = document.getElementById("status");
+    function report() {
+      const vs = handlesSource.get("view");
+      const vi = handlesImage.get("view");
+      const ps = handlesSource.get("points") || [];
+      const pi = handlesImage.get("points") || [];
+      const active = overlay.get("activeLayer");
+      const side = activeSide() === 0 ? "source" : "image";
+      status.textContent =
+        `activeLayer=${active} (${side})` +
+        `\nV_s  scale=${vs.scale.toFixed(1)}  tx=${vs.tx.toFixed(0)}  ty=${vs.ty.toFixed(0)}` +
+        `\nV_i  scale=${vi.scale.toFixed(1)}  tx=${vi.tx.toFixed(0)}  ty=${vi.ty.toFixed(0)}` +
+        `\nsrc pts: ${ps.map((p) => `(${p[0].toFixed(2)},${p[1].toFixed(2)})`).join(" ")}` +
+        `\nimg pts: ${pi.map((p) => `(${p[0].toFixed(2)},${p[1].toFixed(2)})`).join(" ")}`;
+    }
+
+    handlesSource.on("change:points", report);
+    handlesSource.on("change:view", report);
+    handlesImage.on("change:points", report);
+    handlesImage.on("change:view", report);
+    overlay.on("change:activeLayer", report);
+
+    const host = document.getElementById("host");
+    await overlay.create_view({ el: host });
+    applyActive(1);
+    report();
+
+    // =====================================================================
+    // Pan / zoom on the *active side's* view only
+    // =====================================================================
+    const pointers = new Map();
+    let gestureMode = null;
+    let panStart = null;
+    let pinchStart = null;
+
+    function hostXY(ev) {
+      const rect = host.getBoundingClientRect();
+      const scaleX = W / rect.width;
+      const scaleY = H / rect.height;
+      return {
+        x: (ev.clientX - rect.left) * scaleX,
+        y: (ev.clientY - rect.top) * scaleY,
+      };
+    }
+
+    function zoomAround(sx, sy, newScale, oldView) {
+      const x = (sx - W / 2 - oldView.tx) / oldView.scale;
+      const y = (H / 2 - sy - oldView.ty) / oldView.scale;
+      const newTx = sx - W / 2 - x * newScale;
+      const newTy = (H / 2 - sy) - y * newScale;
+      return { scale: newScale, tx: newTx, ty: newTy };
+    }
+
+    function beginGesture() {
+      const ids = [...pointers.keys()];
+      if (ids.length === 1) {
+        const p = pointers.get(ids[0]);
+        gestureMode = "pan";
+        panStart = { sx: p.x, sy: p.y, view: { ...getActiveView() } };
+        pinchStart = null;
+      } else if (ids.length >= 2) {
+        const a = pointers.get(ids[0]);
+        const b = pointers.get(ids[1]);
+        gestureMode = "pinch";
+        const midX = (a.x + b.x) / 2;
+        const midY = (a.y + b.y) / 2;
+        const dist = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+        pinchStart = {
+          midX,
+          midY,
+          dist,
+          view: { ...getActiveView() },
+        };
+        panStart = null;
+      } else {
+        gestureMode = null;
+        panStart = null;
+        pinchStart = null;
+      }
+    }
+
+    function updateGesture() {
+      if (gestureMode === "pan" && panStart) {
+        const ids = [...pointers.keys()];
+        if (ids.length !== 1) return;
+        const p = pointers.get(ids[0]);
+        const dx = p.x - panStart.sx;
+        const dy = p.y - panStart.sy;
+        setActiveView({
+          scale: panStart.view.scale,
+          tx: panStart.view.tx + dx,
+          ty: panStart.view.ty - dy,
+        });
+      } else if (gestureMode === "pinch" && pinchStart) {
+        const ids = [...pointers.keys()];
+        if (ids.length < 2) return;
+        const a = pointers.get(ids[0]);
+        const b = pointers.get(ids[1]);
+        const midX = (a.x + b.x) / 2;
+        const midY = (a.y + b.y) / 2;
+        const dist = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+        const factor = dist / pinchStart.dist;
+        const newScale = pinchStart.view.scale * factor;
+        let v = zoomAround(
+          pinchStart.midX,
+          pinchStart.midY,
+          newScale,
+          pinchStart.view
+        );
+        const dx = midX - pinchStart.midX;
+        const dy = midY - pinchStart.midY;
+        v = { scale: v.scale, tx: v.tx + dx, ty: v.ty - dy };
+        setActiveView(v);
+      }
+    }
+
+    function onPointerDown(ev) {
+      pointers.set(ev.pointerId, hostXY(ev));
+      if (pointers.size === 1 || pointers.size === 2) beginGesture();
+    }
+
+    function onPointerMove(ev) {
+      if (!pointers.has(ev.pointerId)) return;
+      pointers.set(ev.pointerId, hostXY(ev));
+      updateGesture();
+    }
+
+    function onPointerUp(ev) {
+      if (!pointers.has(ev.pointerId)) return;
+      pointers.delete(ev.pointerId);
+      if (pointers.size === 0) {
+        gestureMode = null;
+        panStart = null;
+        pinchStart = null;
+      } else {
+        beginGesture();
+      }
+    }
+
+    function onWheel(ev) {
+      ev.preventDefault();
+      const xy = hostXY(ev);
+      const v = getActiveView();
+      const factor = ev.deltaY < 0 ? 1.12 : 1 / 1.12;
+      setActiveView(zoomAround(xy.x, xy.y, v.scale * factor, v));
+    }
+
+    host.addEventListener("pointerdown", onPointerDown);
+    host.addEventListener("pointermove", onPointerMove);
+    host.addEventListener("pointerup", onPointerUp);
+    host.addEventListener("pointercancel", onPointerUp);
+    host.addEventListener("lostpointercapture", onPointerUp);
+    host.addEventListener("wheel", onWheel, { passive: false });
+  </script>
+</body>
+</html>
