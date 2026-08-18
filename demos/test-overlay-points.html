@@ -41,6 +41,8 @@
       border: 1px solid #e2e8f0;
       border-radius: 8px;
       overflow: hidden;
+      touch-action: none; /* we own all gestures */
+      position: relative;
     }
   </style>
 </head>
@@ -50,6 +52,10 @@
     Two layers share the same view transform \(V\). Content draws a shape + grid;
     PointHandles draws the three points on top. Change the active layer to route
     pointer events; opacity shows which layer is in front.
+  </p>
+  <p style="font-size:0.9rem;color:#64748b">
+    Gestures on empty space: 1-finger / mouse-drag = pan · wheel / 2-finger pinch = zoom around focal point.
+    Dragging a handle still moves the point (PointHandles wins on hit).
   </p>
 
   <div class="controls">
@@ -111,9 +117,12 @@
 
     // --- keep the two views identical ---
     function setSharedView(v) {
-      content.set("view", { ...v });
+      // clamp scale so it never collapses or explodes
+      const scale = Math.min(800, Math.max(8, v.scale));
+      const next = { scale, tx: v.tx, ty: v.ty };
+      content.set("view", { ...next });
       content.save_changes();
-      handles.set("view", { ...v });
+      handles.set("view", { ...next });
       handles.save_changes();
       report();
     }
@@ -139,7 +148,13 @@
       setSharedView({ ...v, scale: v.scale / 1.2 });
     };
     document.getElementById("btnReset").onclick = () => {
+      // Restore both the shared view and the original handle positions
+      // so points that were dragged off-screen come back into view.
       setSharedView({ ...initialView });
+      handles.set("points", initialPoints.map((p) => [...p]));
+      handles.set("active", -1);
+      handles.save_changes();
+      report();
     };
     document.getElementById("btnPanLeft").onclick = () => {
       const v = handles.get("view");
@@ -165,8 +180,172 @@
     handles.on("change:view", report);
     overlay.on("change:activeLayer", report);
 
-    await overlay.create_view({ el: document.getElementById("host") });
+    const host = document.getElementById("host");
+    await overlay.create_view({ el: host });
     report();
+
+    // =====================================================================
+    // Free pan / zoom gestures on the shared view V
+    // (demo-level for now; later extract to a small helper used by Overlay
+    //  or by a composite widget)
+    //
+    // Coordinate convention (matches PointHandles / SimpleContent):
+    //   sx = W/2 + (x * scale + tx)
+    //   sy = H/2 - (y * scale + ty)
+    // Zooming around a screen point (sx,sy) means the plane point under
+    // that pixel stays fixed while scale changes.
+    // =====================================================================
+
+    const pointers = new Map(); // pointerId → {x, y} in host-local CSS pixels
+    let gestureMode = null;     // null | "pan" | "pinch"
+    let panStart = null;        // { sx, sy, view }
+    let pinchStart = null;      // { midX, midY, dist, view }
+
+    function hostXY(ev) {
+      const rect = host.getBoundingClientRect();
+      // map to the logical W×H coordinate system used by the widgets
+      const scaleX = W / rect.width;
+      const scaleY = H / rect.height;
+      return {
+        x: (ev.clientX - rect.left) * scaleX,
+        y: (ev.clientY - rect.top) * scaleY,
+      };
+    }
+
+    function zoomAround(sx, sy, newScale, oldView) {
+      // Keep the plane point currently under (sx,sy) fixed.
+      // Inverse of:
+      //   sx = W/2 + (x * scale + tx)
+      //   sy = H/2 - (y * scale + ty)
+      const x = (sx - W / 2 - oldView.tx) / oldView.scale;
+      const y = (H / 2 - sy - oldView.ty) / oldView.scale;
+      const newTx = sx - W / 2 - x * newScale;
+      const newTy = (H / 2 - sy) - y * newScale;
+      return { scale: newScale, tx: newTx, ty: newTy };
+    }
+
+    function beginGesture() {
+      const ids = [...pointers.keys()];
+      if (ids.length === 1) {
+        const p = pointers.get(ids[0]);
+        gestureMode = "pan";
+        panStart = {
+          sx: p.x,
+          sy: p.y,
+          view: { ...handles.get("view") },
+        };
+        pinchStart = null;
+      } else if (ids.length >= 2) {
+        const a = pointers.get(ids[0]);
+        const b = pointers.get(ids[1]);
+        gestureMode = "pinch";
+        const midX = (a.x + b.x) / 2;
+        const midY = (a.y + b.y) / 2;
+        const dist = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+        pinchStart = {
+          midX,
+          midY,
+          dist,
+          view: { ...handles.get("view") },
+        };
+        panStart = null;
+      } else {
+        gestureMode = null;
+        panStart = null;
+        pinchStart = null;
+      }
+    }
+
+    function updateGesture() {
+      if (gestureMode === "pan" && panStart) {
+        const ids = [...pointers.keys()];
+        if (ids.length !== 1) return;
+        const p = pointers.get(ids[0]);
+        const dx = p.x - panStart.sx;
+        const dy = p.y - panStart.sy;
+        // screen delta → view translation (y is flipped in the plane mapping)
+        setSharedView({
+          scale: panStart.view.scale,
+          tx: panStart.view.tx + dx,
+          ty: panStart.view.ty - dy,
+        });
+      } else if (gestureMode === "pinch" && pinchStart) {
+        const ids = [...pointers.keys()];
+        if (ids.length < 2) return;
+        const a = pointers.get(ids[0]);
+        const b = pointers.get(ids[1]);
+        const midX = (a.x + b.x) / 2;
+        const midY = (a.y + b.y) / 2;
+        const dist = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+        const factor = dist / pinchStart.dist;
+        const newScale = pinchStart.view.scale * factor;
+
+        // First zoom about the original midpoint, then add the mid-point translation.
+        let v = zoomAround(pinchStart.midX, pinchStart.midY, newScale, pinchStart.view);
+        const dx = midX - pinchStart.midX;
+        const dy = midY - pinchStart.midY;
+        v = { scale: v.scale, tx: v.tx + dx, ty: v.ty - dy };
+        setSharedView(v);
+      }
+    }
+
+    function onPointerDown(ev) {
+      // If PointHandles is active and the pointer landed on a handle, let it
+      // own the pointer (it will setPointerCapture). We still record the
+      // pointer so a later second finger can start a pinch, but we do not
+      // start a pan while a handle drag is in progress.
+      const xy = hostXY(ev);
+      pointers.set(ev.pointerId, xy);
+
+      // Only start a view gesture when we are the ones that should handle it.
+      // Heuristic: if the event target is a canvas belonging to PointHandles
+      // and that layer is active, PointHandles may claim the hit. We still
+      // allow the gesture to begin; if PointHandles captures, subsequent
+      // move/up events go to it and our map simply stops receiving them for
+      // that id (we clean up on lostpointercapture / pointerup).
+      if (pointers.size === 1 || pointers.size === 2) {
+        beginGesture();
+      }
+      // Do not preventDefault here – PointHandles needs the event when it hits.
+    }
+
+    function onPointerMove(ev) {
+      if (!pointers.has(ev.pointerId)) return;
+      pointers.set(ev.pointerId, hostXY(ev));
+      updateGesture();
+    }
+
+    function onPointerUp(ev) {
+      if (!pointers.has(ev.pointerId)) return;
+      pointers.delete(ev.pointerId);
+      if (pointers.size === 0) {
+        gestureMode = null;
+        panStart = null;
+        pinchStart = null;
+      } else {
+        // remaining finger(s) – restart the gesture from current positions
+        beginGesture();
+      }
+    }
+
+    function onWheel(ev) {
+      ev.preventDefault();
+      const xy = hostXY(ev);
+      const v = handles.get("view");
+      // typical trackpad / mouse wheel: negative deltaY → zoom in
+      const factor = ev.deltaY < 0 ? 1.12 : 1 / 1.12;
+      const newScale = v.scale * factor;
+      setSharedView(zoomAround(xy.x, xy.y, newScale, v));
+    }
+
+    // Attach on the host so we see events that bubble from the active layer
+    // (PointHandles returns early on a miss, so empty-space events reach us).
+    host.addEventListener("pointerdown", onPointerDown);
+    host.addEventListener("pointermove", onPointerMove);
+    host.addEventListener("pointerup", onPointerUp);
+    host.addEventListener("pointercancel", onPointerUp);
+    host.addEventListener("lostpointercapture", onPointerUp);
+    host.addEventListener("wheel", onWheel, { passive: false });
   </script>
 </body>
 </html>

@@ -26,6 +26,10 @@ function render({ model, el }) {
   let dragging = false;
   let dragIndex = -1;
   let pointerId = null;
+  // Screen-space offset from pointer to handle centre at grab time,
+  // so clicking the edge of a handle does not snap the centre under the finger.
+  let grabOffX = 0;
+  let grabOffY = 0;
 
   function getView() {
     return model.get("view") || { scale: 1, tx: 0, ty: 0 };
@@ -43,8 +47,11 @@ function render({ model, el }) {
   }
 
   function screenToPlane(sx, sy, width, height, view) {
+    // Inverse of:
+    //   sx = width/2  + (x * scale + tx)
+    //   sy = height/2 - (y * scale + ty)
     const x = (sx - width / 2 - view.tx) / view.scale;
-    const y = -(sy - height / 2 - view.ty) / view.scale; // invert y
+    const y = (height / 2 - sy - view.ty) / view.scale;
     return [x, y];
   }
 
@@ -123,13 +130,26 @@ function render({ model, el }) {
   function onPointerDown(ev) {
     const [sx, sy] = pointerXY(ev);
     const hit = findHit(sx, sy);
-    if (hit < 0) return;
+    if (hit < 0) return; // miss → let event bubble so Overlay / host can pan-zoom
 
+    // Claim the pointer so parent gesture surfaces (demo host, future ViewGestures)
+    // do not also treat this as a pan.
     ev.preventDefault();
+    ev.stopPropagation();
     canvas.setPointerCapture(ev.pointerId);
     dragging = true;
     dragIndex = hit;
     pointerId = ev.pointerId;
+
+    // Remember where on the handle we grabbed (screen space)
+    const width = model.get("width") || 480;
+    const height = model.get("height") || 480;
+    const view = getView();
+    const points = getPoints();
+    const [hx, hy] = planeToScreen(points[hit][0], points[hit][1], width, height, view);
+    grabOffX = sx - hx;
+    grabOffY = sy - hy;
+
     model.set("active", hit);
     model.save_changes();
     draw();
@@ -138,12 +158,14 @@ function render({ model, el }) {
   function onPointerMove(ev) {
     if (!dragging || ev.pointerId !== pointerId) return;
     ev.preventDefault();
+    ev.stopPropagation();
 
     const width = model.get("width") || 480;
     const height = model.get("height") || 480;
     const view = getView();
     const [sx, sy] = pointerXY(ev);
-    const [x, y] = screenToPlane(sx, sy, width, height, view);
+    // Apply grab offset so the handle centre tracks the original contact point
+    const [x, y] = screenToPlane(sx - grabOffX, sy - grabOffY, width, height, view);
 
     const points = getPoints();
     if (dragIndex >= 0 && dragIndex < points.length) {
@@ -156,9 +178,13 @@ function render({ model, el }) {
 
   function onPointerUp(ev) {
     if (ev.pointerId !== pointerId) return;
+    ev.preventDefault();
+    ev.stopPropagation();
     dragging = false;
     dragIndex = -1;
     pointerId = null;
+    grabOffX = 0;
+    grabOffY = 0;
     // keep "active" as the last touched point
     draw();
   }

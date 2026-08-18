@@ -4,7 +4,7 @@
   position: relative;
   display: block;
   overflow: hidden;
-  /* size comes from model or parent */
+  background: #f8fafc; /* single paper colour; child canvases stay clear */
 }
 
 .anyui-overlay-layer {

@@ -1,10 +1,31 @@
 /**
- * SimpleContent – minimal drawing layer that shares the same view as PointHandles.
- * Draws a light grid and a fixed polygon (or the outline points) so we can see
- * that the handles stay registered with the content when V changes.
+ * SimpleContent – minimal drawing layer that shares a view with PointHandles.
+ * Draws an optional grid and a fixed polygon so we can see registration
+ * when the view changes.
  *
- * Traits: view {scale, tx, ty}, width, height, color
+ * Traits:
+ *   view {scale, tx, ty}
+ *   width, height
+ *   color          – stroke colour (default #2563eb)
+ *   background     – canvas fill colour, or null/false for clear (transparent)
+ *   showGrid       – boolean (default true)
+ *   shape          – optional array of [x,y] plane points (closed path)
  */
+
+function defaultShape() {
+  return [
+    [0, 1.6],
+    [0.5, 0.5],
+    [1.5, 0.5],
+    [0.7, -0.2],
+    [1.0, -1.3],
+    [0, -0.6],
+    [-1.0, -1.3],
+    [-0.7, -0.2],
+    [-1.5, 0.5],
+    [-0.5, 0.5],
+  ];
+}
 
 function render({ model, el }) {
   el.innerHTML = "";
@@ -39,59 +60,55 @@ function render({ model, el }) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
 
-    // background
-    ctx.fillStyle = "#f8fafc";
-    ctx.fillRect(0, 0, width, height);
+    // Optional opaque / tinted background. null/false → leave transparent
+    // so lower Overlay layers show through.
+    const bg = model.get("background");
+    if (bg !== null && bg !== false && bg !== undefined) {
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, width, height);
+    }
 
     const view = getView();
+    const showGrid = model.get("showGrid") !== false;
 
-    // grid
-    ctx.strokeStyle = "#e2e8f0";
-    ctx.lineWidth = 1;
-    const step = 1;
-    const extent = 4;
-    ctx.beginPath();
-    for (let u = -extent; u <= extent; u += step) {
-      const [x0, y0] = planeToScreen(u, -extent, width, height, view);
-      const [x1, y1] = planeToScreen(u, extent, width, height, view);
-      ctx.moveTo(x0, y0);
-      ctx.lineTo(x1, y1);
-      const [a0, b0] = planeToScreen(-extent, u, width, height, view);
-      const [a1, b1] = planeToScreen(extent, u, width, height, view);
-      ctx.moveTo(a0, b0);
-      ctx.lineTo(a1, b1);
+    if (showGrid) {
+      ctx.strokeStyle = "#e2e8f0";
+      ctx.lineWidth = 1;
+      const step = 1;
+      const extent = 4;
+      ctx.beginPath();
+      for (let u = -extent; u <= extent; u += step) {
+        const [x0, y0] = planeToScreen(u, -extent, width, height, view);
+        const [x1, y1] = planeToScreen(u, extent, width, height, view);
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x1, y1);
+        const [a0, b0] = planeToScreen(-extent, u, width, height, view);
+        const [a1, b1] = planeToScreen(extent, u, width, height, view);
+        ctx.moveTo(a0, b0);
+        ctx.lineTo(a1, b1);
+      }
+      ctx.stroke();
+
+      // axes
+      ctx.strokeStyle = "#94a3b8";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      {
+        const [x0, y0] = planeToScreen(-extent, 0, width, height, view);
+        const [x1, y1] = planeToScreen(extent, 0, width, height, view);
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x1, y1);
+        const [a0, b0] = planeToScreen(0, -extent, width, height, view);
+        const [a1, b1] = planeToScreen(0, extent, width, height, view);
+        ctx.moveTo(a0, b0);
+        ctx.lineTo(a1, b1);
+      }
+      ctx.stroke();
     }
-    ctx.stroke();
 
-    // axes
-    ctx.strokeStyle = "#94a3b8";
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    {
-      const [x0, y0] = planeToScreen(-extent, 0, width, height, view);
-      const [x1, y1] = planeToScreen(extent, 0, width, height, view);
-      ctx.moveTo(x0, y0);
-      ctx.lineTo(x1, y1);
-      const [a0, b0] = planeToScreen(0, -extent, width, height, view);
-      const [a1, b1] = planeToScreen(0, extent, width, height, view);
-      ctx.moveTo(a0, b0);
-      ctx.lineTo(a1, b1);
-    }
-    ctx.stroke();
+    const shape = model.get("shape") || defaultShape();
+    const color = model.get("color") || "#2563eb";
 
-    // simple closed shape (a pentagon-ish star outline for visual interest)
-    const shape = [
-      [0, 1.6],
-      [0.5, 0.5],
-      [1.5, 0.5],
-      [0.7, -0.2],
-      [1.0, -1.3],
-      [0, -0.6],
-      [-1.0, -1.3],
-      [-0.7, -0.2],
-      [-1.5, 0.5],
-      [-0.5, 0.5],
-    ];
     ctx.beginPath();
     shape.forEach(([x, y], i) => {
       const [sx, sy] = planeToScreen(x, y, width, height, view);
@@ -99,11 +116,12 @@ function render({ model, el }) {
       else ctx.lineTo(sx, sy);
     });
     ctx.closePath();
-    ctx.strokeStyle = model.get("color") || "#2563eb";
+    ctx.strokeStyle = color;
     ctx.lineWidth = 2.5;
     ctx.lineJoin = "round";
     ctx.stroke();
-    ctx.fillStyle = "rgba(37, 99, 235, 0.08)";
+    // light fill derived from stroke colour (keeps transparency feel)
+    ctx.fillStyle = color.length === 7 ? color + "14" : "rgba(37, 99, 235, 0.08)";
     ctx.fill();
   }
 
@@ -115,6 +133,9 @@ function render({ model, el }) {
   model.on("change:width", onChange);
   model.on("change:height", onChange);
   model.on("change:color", onChange);
+  model.on("change:background", onChange);
+  model.on("change:showGrid", onChange);
+  model.on("change:shape", onChange);
 
   draw();
 
@@ -123,6 +144,9 @@ function render({ model, el }) {
     model.off("change:width", onChange);
     model.off("change:height", onChange);
     model.off("change:color", onChange);
+    model.off("change:background", onChange);
+    model.off("change:showGrid", onChange);
+    model.off("change:shape", onChange);
   };
 }
 
